@@ -11,6 +11,7 @@
             --secondary-color: #0277bd;
             --secondary-hover: #01579b;
             --danger-color: #c62828;
+            --danger-hover: #b71c1c;
             --warning-color: #f39c12;
             --background-color: #f5f5f5;
             --text-color: #333333;
@@ -212,24 +213,21 @@
         }
 
         .btn-delete {
-            background-color: #f5f5f5;
-            color: #999;
-            border: 1px solid #ccc;
-            cursor: not-allowed;
-        }
-
-        .btn-delete.active {
             background-color: var(--danger-color);
             color: white;
             border: none;
             cursor: pointer;
+        }
+
+        .btn-delete:hover {
+            background-color: var(--danger-hover);
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 id="tituloFormulario">Apontamento Colheita de Milho Ogawa <br> (Safra 25/26) </h2>
+    <h2 id="tituloFormulario">Coleta de Campo</h2>
     
     <form id="registroForm" novalidate>
         <!-- Campos Fixos que NÃO são limpos ao salvar -->
@@ -362,7 +360,6 @@
         "POUSO ALTO", "SAO JOAO", "SONHO VERDE (CONFINAMENTO)", "VITORIA", "SOSSEGO"
     ];
 
-    // REGISTRO DO SERVICE WORKER (Para funcionamento offline na tela inicial)
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./sw.js')
@@ -589,7 +586,7 @@
                 return false;
             }
             if (isNaN(parseFloat(dados.hectaresVal)) || parseFloat(dados.hectaresVal) <= 0) {
-                alert("Erro: O campo 'Hectares Colhidos' deve conter um número decimal maior que zero (Ex: 1,25).");
+                alert("Erro: O campo 'Hectares Colhidos' deve conter un número decimal maior que zero (Ex: 1,25).");
                 document.getElementById('hectares').focus();
                 return false;
             }
@@ -788,7 +785,7 @@
         const operadorLimpo = operadorInput ? operadorInput.replace(/\s+/g, '_') : 'OPERADOR';
         const dataFiltro = document.getElementById('filtro_data_pdf').value;
         const dataFiltroLimpa = dataFiltro ? dataFiltro.split('-').reverse().join('_') : obterDataFormatada();
-        const nomeArquivoFinal = `${operor = operadorLimpo}_${dataFiltroLimpa}.csv`;
+        const nomeArquivoFinal = `${operadorLimpo}_${dataFiltroLimpa}.csv`;
 
         // Download físico no navegador do celular
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -801,7 +798,7 @@
         document.body.removeChild(link);
     }
 
-    // Geração de PDF Visual em Formato Tabela para o Dia Selecionado com Espaço de Assinatura
+    // Geração de PDF Visual com abertura em NOVA ABA (Para visualização e download nativo facilitados)
     function exportarPDF() {
         const dataFiltro = document.getElementById('filtro_data_pdf').value;
         if (!dataFiltro) {
@@ -821,16 +818,12 @@
 
         const dataFormatadaPt = dataFiltro.split('-').reverse().join('/');
 
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
-        document.body.appendChild(iframe);
-
-        const doc = iframe.contentWindow.document;
+        // Abre uma nova janela/aba limpa no celular do operador contendo os dados
+        const novaJanela = window.open('', '_blank');
+        if (!novaJanela) {
+            alert('Aviso: Ative a permissão para aberturas de pop-ups neste navegador para poder visualizar o PDF.');
+            return;
+        }
 
         let htmlPrint = `
         <!DOCTYPE html>
@@ -956,16 +949,13 @@
         </html>
         `;
 
-        doc.write(htmlPrint);
-        doc.close();
+        novaJanela.document.write(htmlPrint);
+        novaJanela.document.close();
 
+        // Dispara o comando de impressão na nova aba gerada para que o celular abra as opções de PDF/Download
         setTimeout(() => {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-            
-            setTimeout(() => {
-                document.body.removeChild(iframe);
-            }, 1000);
+            novaJanela.focus();
+            novaJanela.print();
         }, 500);
     }
 
@@ -1038,9 +1028,6 @@
             const card = document.createElement('div');
             card.className = 'record-card';
 
-            const diasCriado = calcularDiferencaDias(r.timestamp_criacao);
-            const podeExcluir = diasCriado >= 2;
-
             const infoMaquinaColetada = r.minha_maquina === 'Bazuca' ? ` | <strong>Coletada:</strong> ${r.maquina_coletada}` : '';
             const exibirHectares = r.minha_maquina === 'Colheitadeira' ? ` | <strong>Hectares:</strong> ${r.hectares}` : '';
             const dataFormatada = formatarDataHoraParaExibicao(r.data);
@@ -1054,31 +1041,17 @@
                 </div>
                 <div class="card-actions">
                     <button class="btn-card-edit" onclick="carregarParaEdicao(${r.id})">Editar</button>
-                    <button class="btn-delete ${podeExcluir ? 'active' : ''}" 
-                            ${podeExcluir ? '' : 'disabled'} 
-                            onclick="excluirRegistro(${r.id}, ${podeExcluir})">
-                        ${podeExcluir ? 'Excluir' : `Bloqueado (${2 - Math.floor(diasCriado)}d restantes)`}
-                    </button>
+                    <!-- O botão Excluir agora está permanentemente disponível e ativo para qualquer registro -->
+                    <button class="btn-delete" onclick="excluirRegistro(${r.id})">Excluir</button>
                 </div>
             `;
             lista.appendChild(card);
         });
     }
 
-    function calcularDiferencaDias(dataISO) {
-        const criacao = new Date(dataISO);
-        const agora = new Date();
-        const diffTempo = Math.abs(agora - criacao);
-        return diffTempo / (1000 * 60 * 60 * 24);
-    }
-
-    window.excluirRegistro = function(id, podeExcluir) {
-        if (!podeExcluir) {
-            alert('Regra de Segurança: Registros com menos de 2 dias não podem ser apagados.');
-            return;
-        }
-
-        if (confirm('Tem certeza que deseja apagar permanentemente este registro?')) {
+    // Exclusão direta imediata de itens a partir de confirmação visual do operador
+    window.excluirRegistro = function(id) {
+        if (confirm('Tem certeza que deseja apagar permanentemente este registro do histórico local?')) {
             let registros = obterRegistros();
             registros = registros.filter(r => r.id !== id);
             salvarRegistros(registros);
