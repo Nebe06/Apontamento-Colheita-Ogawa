@@ -1,8 +1,8 @@
-const CACHE_NAME = 'coleta-campo-v7'; // Nova versão v7 para forçar atualização no celular
+const CACHE_NAME = 'coleta-campo-v8'; // Versão v8 para forçar atualização no celular
 const ASSETS = [
   './',
   './index.html',
-  'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js' // Salva a biblioteca no cache offline do celular
+  'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
 ];
 
 self.addEventListener('install', event => {
