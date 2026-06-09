@@ -212,7 +212,6 @@
             background-color: var(--secondary-hover);
         }
 
-        /* Estilização corrigida e forçada do botão de exclusão ativa */
         .btn-delete {
             background-color: var(--danger-color) !important;
             color: white !important;
@@ -223,105 +222,15 @@
         .btn-delete:hover {
             background-color: var(--danger-hover) !important;
         }
-
-        /* PAINEL DE VISUALIZAÇÃO DO PDF (MODAL) */
-        #painelVisualizacaoPdf {
-            display: none; /* Oculto por padrão */
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #ffffff;
-            z-index: 9999;
-            overflow-y: auto;
-            padding: 20px;
-        }
-
-        .barra-acoes-pdf {
-            background-color: #f5f5f5;
-            padding: 12px;
-            text-align: center;
-            border-bottom: 1px solid #ddd;
-            margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .barra-acoes-pdf button {
-            margin-top: 0;
-            padding: 10px;
-            font-size: 14px;
-        }
-
-        /* Estilos da Tabela de PDF dentro do painel de visualização */
-        .pdf-tabela {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-
-        .pdf-tabela th, .pdf-tabela td {
-            border: 1px solid #111111;
-            padding: 6px 8px;
-            text-align: left;
-            font-size: 10px;
-        }
-
-        .pdf-tabela th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-
-        .pdf-assinaturas {
-            margin-top: 50px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .pdf-assinatura-bloco {
-            width: 30%;
-            text-align: center;
-            font-size: 11px;
-        }
-
-        .pdf-assinatura-linha {
-            border-top: 1px solid #000;
-            margin-bottom: 5px;
-            margin-top: 40px;
-        }
-
-        /* REGRAS EXCLUSIVAS DE IMPRESSÃO (O que aparece no arquivo PDF final) */
-        @media print {
-            /* Esconde absolutamente tudo na tela do app */
-            body * {
-                visibility: hidden;
-            }
-            /* Exibe apenas o painel de visualização */
-            #painelVisualizacaoPdf, #painelVisualizacaoPdf * {
-                visibility: visible;
-            }
-            #painelVisualizacaoPdf {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                padding: 0;
-            }
-            /* Esconde os botões de ação de impressão no PDF final */
-            .barra-acoes-pdf {
-                display: none !important;
-            }
-        }
     </style>
 </head>
 <body>
 
-<!-- APP PRINCIPAL -->
 <div class="container" id="conteudoApp">
     <h2 id="tituloFormulario">Coleta de Campo</h2>
     
     <form id="registroForm" novalidate>
+        <!-- Campos Fixos que NÃO são limpos ao salvar -->
         <div class="form-group">
             <label for="nome_operador">Nome do Operador</label>
             <input type="text" id="nome_operador" required placeholder="EX: JOAO SILVA" pattern="[A-Z\s]+" title="Apenas letras maiúsculas, sem acentos ou caracteres especiais.">
@@ -346,16 +255,19 @@
             </div>
         </div>
 
+        <!-- Campo Condicional Máquina Coletada -->
         <div class="form-group hidden" id="grupo_maquina_coletada">
             <label for="maquina_coletada">Máquina Coletada</label>
             <input type="text" id="maquina_coletada" placeholder="Ex: 326" inputmode="numeric" pattern="[0-9]+">
         </div>
 
+        <!-- Campos que SÃO limpos ao salvar -->
         <div class="form-group">
             <label for="data">Data da Operação</label>
             <input type="date" id="data" required>
         </div>
 
+        <!-- Campo Fazenda com Autocompletar -->
         <div class="form-group">
             <label for="fazenda">Fazenda</label>
             <input type="text" id="fazenda" list="lista_fazendas" required placeholder="Digite ou selecione a fazenda">
@@ -407,6 +319,7 @@
             </div>
         </div>
 
+        <!-- Campo Hectares (Condicional - Oculto se for Bazuca) -->
         <div class="form-group" id="grupo_hectares">
             <label for="hectares">Hectares Colhidos</label>
             <input type="number" id="hectares" step="0.01" required placeholder="Ex: 1,25">
@@ -421,6 +334,7 @@
         <button type="button" class="btn-cancel" id="btnCancelarEdicao">Cancelar Edição</button>
     </form>
 
+    <!-- Sessão de Exportação -->
     <div class="section-divider">
         <div class="form-group">
             <label for="filtro_data_pdf">Selecionar Data para Exportações</label>
@@ -434,15 +348,6 @@
         <h3 class="history-title">Histórico Local</h3>
         <div id="historicoLista"></div>
     </div>
-</div>
-
-<!-- PAINEL DE VISUALIZAÇÃO DO PDF SOBREPOSTO -->
-<div id="painelVisualizacaoPdf">
-    <div class="barra-acoes-pdf">
-        <button class="btn-submit" onclick="window.print()">Salvar como PDF ou Imprimir</button>
-        <button class="btn-cancel" id="btnFecharVisualizacao" style="display: block;">Voltar ao Aplicativo</button>
-    </div>
-    <div id="corpoPdfVisualizacao"></div>
 </div>
 
 <script>
@@ -472,11 +377,11 @@
         document.getElementById('btnCancelarEdicao').addEventListener('click', cancelarEdicao);
         document.getElementById('btnExportarPDF').addEventListener('click', exportarPDF);
         document.getElementById('btnExportarCSV').addEventListener('click', exportarCSV);
-        document.getElementById('btnFecharVisualizacao').addEventListener('click', fecharPainelPdf);
         
         document.getElementById('filtro_data_pdf').value = new Date().toISOString().substring(0, 10);
     });
 
+    // Sanitização e validação em tempo real dos inputs
     function configurarRestricoesTeclado() {
         const inputNome = document.getElementById('nome_operador');
         const inputCodMaquina = document.getElementById('cod_maquina');
@@ -485,6 +390,7 @@
         const inputTalhao = document.getElementById('talhao');
         const inputVeiculo = document.getElementById('cod_veiculo_destino');
 
+        // Nome do operador: Somente letras maiúsculas e espaços
         inputNome.addEventListener('input', function() {
             let valor = this.value.toUpperCase();
             valor = valor.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -492,27 +398,33 @@
             this.value = valor;
         });
 
+        // Código da máquina: Somente inteiros
         inputCodMaquina.addEventListener('input', function() {
             this.value = this.value.replace(/\D/g, '');
         });
 
+        // Máquina coletada: Somente inteiros
         inputMaquinaColetada.addEventListener('input', function() {
             this.value = this.value.replace(/\D/g, '');
         });
 
+        // Fazenda: Força letras maiúsculas durante a digitação
         inputFazenda.addEventListener('input', function() {
             this.value = this.value.toUpperCase();
         });
 
+        // Talhão: Somente inteiros
         inputTalhao.addEventListener('input', function() {
             this.value = this.value.replace(/\D/g, '');
         });
 
+        // Veículo de destino: Somente inteiros
         inputVeiculo.addEventListener('input', function() {
             this.value = this.value.replace(/\D/g, '');
         });
     }
 
+    // Retorna a data de hoje formatada em YYYY-MM-DD local do celular
     function obterDataLocalHoje() {
         const d = new Date();
         const dia = String(d.getDate()).padStart(2, '0');
@@ -529,6 +441,7 @@
         return `${horas}:${minutos}:${segundos}`;
     }
 
+    // Função de formatação para exibir data no formato dd/mm/aa + hora
     function formatarDataHoraParaExibicao(dataOriginal) {
         if (!dataOriginal || dataOriginal.length < 10) return dataOriginal;
         
@@ -548,6 +461,7 @@
         return parteHora ? `${dataFormatada} ${parteHora}` : dataFormatada;
     }
 
+    // Configuração dos eventos de exibição dinâmica de campos e alteração de obrigatoriedade
     function configurarEventosCondicionais() {
         const radiosMinhaMaquina = document.getElementsByName('minha_maquina');
         const grupoMaquinaColetada = document.getElementById('grupo_maquina_coletada');
@@ -576,6 +490,7 @@
         });
     }
 
+    // Validação Manual Detalhada de Erros para Exibição dos Alertas
     function validarFormulario(dados) {
         if (!dados.operador) {
             alert("Erro: O campo 'Nome do Operador' é obrigatório.");
@@ -606,6 +521,7 @@
 
         const minhaMaquinaVal = dados.minhaMaquinaRadio.value;
 
+        // Valida Máquina Coletada apenas se o campo estiver visível (Bazuca)
         if (minhaMaquinaVal === 'Bazuca') {
             if (!dados.maqColetada) {
                 alert("Erro: Para 'Bazuca', o campo 'Máquina Coletada' é obrigatório.");
@@ -625,6 +541,7 @@
             return false;
         }
 
+        // Regra de Validação Temporal para Novos Registros
         if (idRegistroEmEdicao === null) {
             const hoje = obterDataLocalHoje();
             if (dados.dataSelecionada !== hoje) {
@@ -661,6 +578,7 @@
             return false;
         }
 
+        // Valida Hectares apenas se o campo estiver visível (Colheitadeira)
         if (minhaMaquinaVal === 'Colheitadeira') {
             if (!dados.hectaresVal) {
                 alert("Erro: Para 'Colheitadeira', o campo 'Hectares Colhidos' é obrigatório.");
@@ -688,6 +606,7 @@
         return true;
     }
 
+    // Salvar ou Atualizar Registro com Validação Estrita de Campos Obrigatórios e de Fazendas
     document.getElementById('registroForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
@@ -722,7 +641,7 @@
                 registros[index].minha_maquina = minhaMaquinaVal;
                 registros[index].maquina_coletada = dadosForm.maqColetada;
                 registros[index].fazenda = dadosForm.fazendaValor;
-                registros[index].talhao = dadosForm.talhao;
+                registros[index].talhao = talhao;
                 registros[index].volume_carga = dadosForm.volumeCargaRadio.value;
                 registros[index].hectares = valorHectares;
                 registros[index].cod_veiculo_destino = dadosForm.veiculo;
@@ -752,6 +671,7 @@
             registros.push(dataRegistro);
             salvarRegistros(registros);
 
+            // Limpa apenas os campos variáveis
             document.getElementById('data').value = obterDataLocalHoje();
             document.getElementById('fazenda').value = '';
             document.getElementById('talhao').value = '';
@@ -783,6 +703,7 @@
         btnSalvar.classList.add('modo-edicao');
         document.getElementById('btnCancelarEdicao').style.display = 'block';
 
+        // Desabilita alteração do campo de data durante edições antigas
         const inputData = document.getElementById('data');
         inputData.value = registro.data.substring(0, 10);
         inputData.disabled = true;
@@ -820,12 +741,14 @@
         btnSalvar.innerText = "Salvar Registro";
         btnSalvar.classList.remove('modo-edicao');
         document.getElementById('btnCancelarEdicao').style.display = 'none';
+
+        // Reativa o campo de data
         document.getElementById('data').disabled = false;
 
         carregarUltimoEstado();
     }
 
-    // Exportação do CSV - FILTRADO estritamente por Data Selecionada
+    // Exportação Física para arquivo CSV no Celular (Sem disparar o WhatsApp)
     function exportarCSV() {
         const dataFiltro = document.getElementById('filtro_data_pdf').value;
         if (!dataFiltro) {
@@ -868,7 +791,7 @@
         const operadorInput = document.getElementById('nome_operador').value.trim();
         const operadorLimpo = operadorInput ? operadorInput.replace(/\s+/g, '_') : 'OPERADOR';
         const dataFiltroLimpa = dataFiltro.split('-').reverse().join('_');
-        const nomeArquivoFinal = `${operadorLimpo}_${dataFiltroLimpa}.csv`; // RESOLVIDO: Sem erros de digitação internos
+        const nomeArquivoFinal = `${operadorLimpo}_${dataFiltroLimpa}.csv`;
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -880,11 +803,11 @@
         document.body.removeChild(link);
     }
 
-    // PDF - Geração com exibição no mesmo app (Painel Modal Sobreposto)
+    // Geração de PDF Visual Direto por canal invisível (Iframe oculto) sem telas intermediárias
     function exportarPDF() {
         const dataFiltro = document.getElementById('filtro_data_pdf').value;
         if (!dataFiltro) {
-            alert('Por favor, escolha uma data para gerar o PDF.');
+            alert('Por favor, escolha uma data para exportar o PDF.');
             return;
         }
 
@@ -900,11 +823,71 @@
 
         const dataFormatadaPt = dataFiltro.split('-').reverse().join('/');
 
-        // Constrói o HTML puro de impressão para renderizar no painel interno
+        // Construção do código HTML puro para impressão direta
         let htmlPrint = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Relatorio_Diario_${dataFiltro}</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 15px;
+                    color: #000;
+                    background-color: #fff;
+                }
+                h3 {
+                    text-align: center;
+                    margin-bottom: 5px;
+                    font-size: 16px;
+                }
+                p {
+                    text-align: center;
+                    font-size: 12px;
+                    margin-bottom: 20px;
+                    color: #555;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 10px;
+                }
+                th, td {
+                    border: 1px solid #111111;
+                    padding: 6px 8px;
+                    text-align: left;
+                    font-size: 10px;
+                }
+                th {
+                    background-color: #f2f2f2;
+                    font-weight: bold;
+                }
+                .signature-container {
+                    margin-top: 50px;
+                    display: flex;
+                    justify-content: space-between;
+                    page-break-inside: avoid;
+                }
+                .signature-block {
+                    width: 30%;
+                    text-align: center;
+                    font-size: 11px;
+                }
+                .signature-line {
+                    border-top: 1px solid #000;
+                    margin-bottom: 5px;
+                    margin-top: 40px;
+                }
+                @media print {
+                    @page { margin: 1cm; }
+                }
+            </style>
+        </head>
+        <body>
             <h3>Relatório Diário de Operação de Campo</h3>
             <p>Data de Referência: ${dataFormatadaPt} | Gerado em: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}</p>
-            <table class="pdf-tabela">
+            <table>
                 <thead>
                     <tr>
                         <th>Data/Hora</th>
@@ -947,30 +930,47 @@
                 </tbody>
             </table>
 
-            <div class="pdf-assinaturas">
-                <div class="pdf-assinatura-bloco">
-                    <div class="pdf-assinatura-linha"></div>
+            <div class="signature-container">
+                <div class="signature-block">
+                    <div class="signature-line"></div>
                     <strong>Assinatura do Operador</strong>
                 </div>
-                <div class="pdf-assinatura-bloco">
-                    <div class="pdf-assinatura-linha"></div>
+                <div class="signature-block">
+                    <div class="signature-line"></div>
                     <strong>Assinatura do Supervisor</strong>
                 </div>
-                <div class="pdf-assinatura-bloco">
-                    <div class="pdf-assinatura-linha"></div>
+                <div class="signature-block">
+                    <div class="signature-line"></div>
                     <strong>Assinatura do Auditor</strong>
                 </div>
             </div>
+        </body>
+        </html>
         `;
 
-        // Renderiza no painel e abre a visualização sobreposta sem Pop-ups ou abas em branco
-        document.getElementById('corpoPdfVisualizacao').innerHTML = htmlPrint;
-        document.getElementById('painelVisualizacaoPdf').style.display = 'block';
-    }
+        // Cria o iframe invisível para disparo direto
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
 
-    function fecharPainelPdf() {
-        document.getElementById('painelVisualizacaoPdf').style.display = 'none';
-        document.getElementById('corpoPdfVisualizacao').innerHTML = '';
+        const doc = iframe.contentWindow.document;
+        doc.write(htmlPrint);
+        doc.close();
+
+        // Dispara o download/gravação nativa diretamente do iframe e remove o componente em seguida
+        setTimeout(() => {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+            
+            setTimeout(() => {
+                document.body.removeChild(iframe);
+            }, 1000);
+        }, 500);
     }
 
     function obterRegistros() {
@@ -987,6 +987,7 @@
         if (registros.length > 0) {
             const ultimo = registros[registros.length - 1];
             
+            // Preserva Nome, Código e Tipo da Máquina conforme a última gravação
             document.getElementById('nome_operador').value = ultimo.nome_operador;
             document.getElementById('cod_maquina').value = ultimo.cod_maquina;
             
@@ -996,6 +997,7 @@
                 radioMaquina.dispatchEvent(new Event('change'));
             }
 
+            // Força a limpeza dos demais campos de operação
             document.getElementById('data').value = obterDataLocalHoje();
             document.getElementById('fazenda').value = '';
             document.getElementById('talhao').value = '';
@@ -1067,6 +1069,7 @@
         return diffTempo / (1000 * 60 * 60 * 24);
     }
 
+    // Exclusão direta imediata de itens a partir de confirmação visual do operador
     window.excluirRegistro = function(id) {
         if (confirm('Tem certeza que deseja apagar permanentemente este registro do histórico local?')) {
             let registros = obterRegistros();
