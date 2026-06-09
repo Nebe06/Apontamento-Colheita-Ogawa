@@ -229,7 +229,7 @@
 <body>
 
 <div class="container">
-    <h2 id="tituloFormulario">Apontamento Colheita de Milho <br> (Safra 25/26) </h2>
+    <h2 id="tituloFormulario">Coleta de Campo</h2>
     
     <form id="registroForm" novalidate>
         <!-- Campos Fixos que NÃO são limpos ao salvar -->
@@ -338,7 +338,7 @@
 
     <!-- Sessão de Exportação -->
     <div class="section-divider">
-        <button type="button" class="btn-export" id="btnExportarCSV" style="background-color: #27ae60;">Exportar Todos (CSV + WhatsApp)</button>
+        <button type="button" class="btn-export" id="btnExportarCSV" style="background-color: #27ae60;">Exportar Todos (CSV)</button>
         <div class="form-group" style="margin-top: 15px;">
             <label for="filtro_data_pdf">Filtrar Data para Exportar PDF</label>
             <input type="date" id="filtro_data_pdf">
@@ -361,6 +361,15 @@
         "GRAO DE OURO", "CHUPE", "JOAO FONSECA", "FRANCES", "PERDIZ", 
         "POUSO ALTO", "SAO JOAO", "SONHO VERDE (CONFINAMENTO)", "VITORIA", "SOSSEGO"
     ];
+
+    // REGISTRO DO SERVICE WORKER (Para funcionamento offline na tela inicial)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('Service Worker registrado.', reg.scope))
+                .catch(err => console.log('Falha ao registrar Service Worker.', err));
+        });
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
         configurarEventosCondicionais();
@@ -439,17 +448,17 @@
     function formatarDataHoraParaExibicao(dataOriginal) {
         if (!dataOriginal || dataOriginal.length < 10) return dataOriginal;
         
-        const parteData = dataOriginal.substring(0, 10); // "YYYY-MM-DD"
-        const parteHora = dataOriginal.substring(11); // "HH:MM:SS" (se houver)
+        const parteData = dataOriginal.substring(0, 10); 
+        const parteHora = dataOriginal.substring(11); 
         
         const partes = parteData.split('-');
         if (partes.length !== 3) return dataOriginal;
         
-        const anoCompleto = partes[0]; // "YYYY"
-        const mes = partes[1]; // "MM"
-        const dia = partes[2]; // "DD"
+        const anoCompleto = partes[0]; 
+        const mes = partes[1]; 
+        const dia = partes[2]; 
         
-        const anoCurto = anoCompleto.substring(2); // "YY"
+        const anoCurto = anoCompleto.substring(2); 
         const dataFormatada = `${dia}/${mes}/${anoCurto}`;
         
         return parteHora ? `${dataFormatada} ${parteHora}` : dataFormatada;
@@ -742,7 +751,7 @@
         carregarUltimoEstado();
     }
 
-    // Exportação Física para arquivo CSV no Celular + Redirecionamento de WhatsApp
+    // Exportação Física para arquivo CSV no Celular (Sem disparar o WhatsApp)
     function exportarCSV() {
         const registros = obterRegistros();
         if (registros.length === 0) {
@@ -774,22 +783,25 @@
             csvContent += linha.join(';') + '\r\n';
         });
 
+        // Configuração do Nome do Arquivo Customizado: [Nome_do_Operador]_[Data_Selecionada_no_Filtro_PDF].csv
+        const operadorInput = document.getElementById('nome_operador').value.trim();
+        const operadorLimpo = operadorInput ? operadorInput.replace(/\s+/g, '_') : 'OPERADOR';
+        const dataFiltro = document.getElementById('filtro_data_pdf').value;
+        const dataFiltroLimpa = dataFiltro ? dataFiltro.split('-').reverse().join('_') : obterDataFormatada();
+        const nomeArquivoFinal = `${operor = operadorLimpo}_${dataFiltroLimpa}.csv`;
+
+        // Download físico no navegador do celular
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
-        link.setAttribute('download', `relatorio_coleta_${obterDataFormatada()}.csv`);
+        link.setAttribute('download', nomeArquivoFinal);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-
-        setTimeout(() => {
-            const message = encodeURIComponent(`Olá, segue anexo o relatório CSV de coleta de campo gerado no dispositivo.`);
-            window.open(`https://api.whatsapp.com/send?text=${message}`, '_blank');
-        }, 1000);
     }
 
-    // Geração de PDF Visual em Formato Tabela com Assinatura e Data no formato dd/mm/aa
+    // Geração de PDF Visual em Formato Tabela para o Dia Selecionado com Espaço de Assinatura
     function exportarPDF() {
         const dataFiltro = document.getElementById('filtro_data_pdf').value;
         if (!dataFiltro) {
@@ -904,8 +916,6 @@
         filtrados.forEach(r => {
             const maqColetada = r.maquina_coletada || "-";
             const hecExibir = r.hectares !== null ? r.hectares.toString().replace('.', ',') : "-";
-            
-            // Converte a exibição da data no relatório para o formato DD/MM/YY HH:MM:SS
             const dataRelatorioExibivel = formatarDataHoraParaExibicao(r.data);
 
             htmlPrint += `
@@ -1033,8 +1043,6 @@
 
             const infoMaquinaColetada = r.minha_maquina === 'Bazuca' ? ` | <strong>Coletada:</strong> ${r.maquina_coletada}` : '';
             const exibirHectares = r.minha_maquina === 'Colheitadeira' ? ` | <strong>Hectares:</strong> ${r.hectares}` : '';
-
-            // Converte a exibição da data no histórico local para o formato DD/MM/YY HH:MM:SS
             const dataFormatada = formatarDataHoraParaExibicao(r.data);
 
             card.innerHTML = `
