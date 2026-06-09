@@ -1,8 +1,9 @@
-const CACHE_NAME = 'coleta-campo-v8'; // Versão v8 para forçar atualização no celular
+const CACHE_NAME = 'coleta-campo-v10'; // v10 força a atualização das novas dependências de PDF
 const ASSETS = [
   './',
   './index.html',
-  'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js'
 ];
 
 self.addEventListener('install', event => {
