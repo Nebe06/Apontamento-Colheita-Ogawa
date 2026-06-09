@@ -1,10 +1,10 @@
-const CACHE_NAME = 'coleta-campo-v1';
+const CACHE_NAME = 'coleta-campo-v3'; // Mudança da versão força a atualização nos celulares
 const ASSETS = [
   './',
   './index.html'
 ];
 
-// Instalação do Service Worker e armazenamento do HTML no cache
+// Instalação do Service Worker e descarte imediato de versões obsoletas
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
@@ -14,12 +14,24 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// Ativação do Service Worker
+// Ativação e limpeza de caches antigos
 self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cache => {
+          if (cache !== CACHE_NAME) {
+            console.log('Removendo cache antigo:', cache);
+            return caches.delete(cache);
+          }
+        })
+      );
+    })
+  );
+  self.clients.claim();
 });
 
-// Interceptador de requisições: se offline, serve o arquivo do cache local
+// Interceptador offline de requisições
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
