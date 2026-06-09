@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coleta de Campo</title>
-    <!-- Importação da biblioteca leve de PDF (Salva em cache pelo Service Worker) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Importação das bibliotecas nativas de geração de PDF vetorial selecionável -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
             --primary-color: #2e7d32;
@@ -705,9 +706,13 @@
         btnSalvar.classList.add('modo-edicao');
         document.getElementById('btnCancelarEdicao').style.display = 'block';
 
+        // Desabilita alteração do campo de data durante edições antigas
+        const inputData = document.getElementById('data');
+        inputData.value = registro.data.substring(0, 10);
+        inputData.disabled = true;
+
         document.getElementById('nome_operador').value = registro.nome_operador;
         document.getElementById('cod_maquina').value = registro.cod_maquina;
-        document.getElementById('data').value = registro.data.substring(0, 10);
         document.getElementById('fazenda').value = registro.fazenda;
         document.getElementById('talhao').value = registro.talhao;
         document.getElementById('cod_veiculo_destino').value = registro.cod_veiculo_destino;
@@ -786,10 +791,11 @@
             csvContent += linha.join(';') + '\r\n';
         });
 
+        // Configuração do Nome do Arquivo Customizado
         const operadorInput = document.getElementById('nome_operador').value.trim();
         const operadorLimpo = operadorInput ? operadorInput.replace(/\s+/g, '_') : 'OPERADOR';
         const dataFiltroLimpa = dataFiltro.split('-').reverse().join('_');
-        const nomeArquivoFinal = `${operadorLimpo}_${dataFiltroLimpa}.csv`;
+        const nomeArquivoFinal = `${operadorLimpo}_${dataFiltroLimpa}.csv`; // RESOLVIDO: Sem erros de digitação
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -801,7 +807,7 @@
         document.body.removeChild(link);
     }
 
-    // Geração e download FÍSICO direto do arquivo .PDF (Estabilizado para Mobile)
+    // Geração de PDF VETORIAL DIRETO (Suporte de texto e colagem 100% preservados)
     function exportarPDF() {
         const dataFiltro = document.getElementById('filtro_data_pdf').value;
         if (!dataFiltro) {
@@ -817,112 +823,86 @@
             return;
         }
 
+        // Ordenar por hora crescente
         filtrados.sort((a, b) => new Date(a.data.replace(' ', 'T')) - new Date(b.data.replace(' ', 'T')));
 
         const dataFormatadaPt = dataFiltro.split('-').reverse().join('/');
 
-        // Construção do nome do arquivo padrão para o PDF
+        // Nome do arquivo PDF: [Nome_do_Operador]_[Data_Selecionada_no_Filtro].pdf
         const operadorInput = document.getElementById('nome_operador').value.trim();
-        const operadorLimpo = operadorInput ? operadorInput.replace(/\s+/g, '_') : 'OPERADOR';
+        const operadorRegistro = filtrados[0] ? filtrados[0].nome_operador : 'OPERADOR';
+        const operadorFinal = operadorInput || operadorRegistro; // Garante o nome correto
+        const operadorLimpo = operadorFinal.replace(/\s+/g, '_');
         const dataFiltroLimpa = dataFiltro.split('-').reverse().join('_');
-        const nomeArquivoFinal = `${operadorLimpo}_${dataFiltroLimpa}.pdf`;
+        const nomeArquivoFinal = `${operadorLimpo}_${dataFiltroLimpa}.pdf`; // RESOLVIDO: Sem erros de digitação
 
-        // Construção de um container div off-screen contendo a tabela visual do relatório
-        const elementoRelatorio = document.createElement('div');
-        elementoRelatorio.id = 'temp-pdf-render';
+        // Inicialização do documento jsPDF em modo paisagem (Landscape)
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape' });
+
+        // Título e Cabeçalho do PDF nativo
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text("Relatório Diário de Operação de Campo", 14, 15);
         
-        // CSS em linha para renderizador html2canvas de alta compatibilidade
-        elementoRelatorio.style.position = 'absolute';
-        elementoRelatorio.style.left = '-9999px';
-        elementoRelatorio.style.top = '0';
-        elementoRelatorio.style.width = '1024px'; // Resolução estável para simular A4 Paisagem
-        elementoRelatorio.style.padding = '30px';
-        elementoRelatorio.style.backgroundColor = '#ffffff';
-        elementoRelatorio.style.color = '#000000';
+        doc.setFont("Helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`Data de Referência: ${dataFormatadaPt} | Gerado em: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, 14, 22);
 
-        let htmlPrint = `
-            <h3 style="text-align: center; margin-bottom: 5px; font-family: Arial, sans-serif; font-size: 16px;">Relatório Diário de Operação de Campo</h3>
-            <p style="text-align: center; font-family: Arial, sans-serif; font-size: 12px; margin-bottom: 20px; color: #555;">Data de Referência: ${dataFormatadaPt} | Gerado em: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}</p>
-            
-            <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-family: Arial, sans-serif;">
-                <thead>
-                    <tr style="background-color: #f2f2f2;">
-                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Data/Hora</th>
-                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Operador</th>
-                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Cód. Maq.</th>
-                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Tipo Máquina</th>
-                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Máq. Coletada</th>
-                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Fazenda</th>
-                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Talhão</th>
-                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Vol. Carga</th>
-                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Hectares</th>
-                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Veículo Dest.</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
+        // Estrutura de colunas e dados para renderização da Tabela Vetorial (jspdf-autotable)
+        const colunas = ["Data/Hora", "Operador", "Cód. Maq.", "Tipo Máquina", "Máq. Coletada", "Fazenda", "Talhão", "Vol. Carga", "Hectares", "Veículo Dest."];
+        const linhas = [];
 
         filtrados.forEach(r => {
             const maqColetada = r.maquina_coletada || "-";
             const hecExibir = r.hectares !== null ? r.hectares.toString().replace('.', ',') : "-";
             const dataRelatorioExibivel = formatarDataHoraParaExibicao(r.data);
-
-            htmlPrint += `
-                <tr>
-                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${dataRelatorioExibivel}</td>
-                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${r.nome_operador}</td>
-                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${r.cod_maquina}</td>
-                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${r.minha_maquina}</td>
-                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${maqColetada}</td>
-                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${r.fazenda}</td>
-                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${r.talhao}</td>
-                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${r.volume_carga}</td>
-                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${hecExibir}</td>
-                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${r.cod_veiculo_destino}</td>
-                </tr>
-            `;
+            
+            linhas.push([
+                dataRelatorioExibivel,
+                r.nome_operador,
+                r.cod_maquina,
+                r.minha_maquina,
+                maqColetada,
+                r.fazenda,
+                r.talhao,
+                r.volume_carga,
+                hecExibir,
+                r.cod_veiculo_destino
+            ]);
         });
 
-        htmlPrint += `
-                </tbody>
-            </table>
+        // Desenho automático da tabela
+        doc.autoTable({
+            startY: 28,
+            head: [colunas],
+            body: linhas,
+            theme: 'grid',
+            styles: { fontSize: 8, font: 'Helvetica' },
+            headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' }
+        });
 
-            <div style="margin-top: 60px; display: flex; justify-content: space-between; font-family: Arial, sans-serif;">
-                <div style="width: 30%; text-align: center; font-size: 10px;">
-                    <div style="border-top: 1px solid #000; margin-bottom: 5px; margin-top: 40px;"></div>
-                    <strong>Assinatura do Operador</strong>
-                </div>
-                <div style="width: 30%; text-align: center; font-size: 10px;">
-                    <div style="border-top: 1px solid #000; margin-bottom: 5px; margin-top: 40px;"></div>
-                    <strong>Assinatura do Supervisor</strong>
-                </div>
-                <div style="width: 30%; text-align: center; font-size: 10px;">
-                    <div style="border-top: 1px solid #000; margin-bottom: 5px; margin-top: 40px;"></div>
-                    <strong>Assinatura do Auditor</strong>
-                </div>
-            </div>
-        `;
+        // Linhas de Assinatura Dinâmicas baseadas no fim da tabela
+        const finalY = doc.lastAutoTable.finalY + 15;
+        const larguraPagina = doc.internal.pageSize.getWidth();
+        const yLinha = finalY + 15;
 
-        elementoRelatorio.innerHTML = htmlPrint;
-        document.body.appendChild(elementoRelatorio);
+        doc.setFontSize(9);
+        
+        // Coluna 1: Operador
+        doc.line(14, yLinha, 80, yLinha);
+        doc.text("Assinatura do Operador", 14 + 10, yLinha + 5);
 
-        const opt = {
-            margin:       0.5,
-            filename:     nomeArquivoFinal,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, logging: false },
-            jsPDF:        { unit: 'cm', format: 'A4', orientation: 'landscape' }
-        };
+        // Coluna 2: Supervisor
+        doc.line(larguraPagina/2 - 33, yLinha, larguraPagina/2 + 33, yLinha);
+        doc.text("Assinatura do Supervisor", larguraPagina/2 - 20, yLinha + 5);
 
-        // Atraso de segurança de 250ms para que o navegador renderize a tabela antes de salvar
-        setTimeout(() => {
-            html2pdf().set(opt).from(elementoRelatorio).save().then(() => {
-                document.body.removeChild(elementoRelatorio);
-            }).catch(err => {
-                console.error('Erro ao gerar o PDF offline:', err);
-                document.body.removeChild(elementoRelatorio);
-            });
-        }, 250);
+        // Coluna 3: Auditor
+        doc.line(larguraPagina - 80, yLinha, larguraPagina - 14, yLinha);
+        doc.text("Assinatura do Auditor", larguraPagina - 70, yLinha + 5);
+
+        // Realiza o download físico direto do arquivo .PDF contendo apenas os dados de texto reais (vetoriais)
+        doc.save(nomeArquivoFinal);
     }
 
     function obterRegistros() {
@@ -969,7 +949,7 @@
             document.getElementById('cod_veiculo_destino').value = '';
             document.getElementById('maquina_coletada').value = '';
             
-            const checkedMaquina = document.querySelector('input[name="minha_maquina"]:checked');
+            const checkedMaquina = document.querySelector('input[name="minha_maquina"][value="${ultimo.minha_maquina}"]');
             if (checkedMaquina) checkedMaquina.checked = false;
             
             const checkedVolume = document.querySelector('input[name="volume_carga"]:checked');
