@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coleta de Campo</title>
+    <style>
+        :root {
+            --primary-color: #2e7d32;
+            --primary-hover: #1b5e20;
+            --secondary-color: #0277bd;
+            --secondary-hover: #01579b;
+            --danger-color: #c62828;
+            --warning-color: #f39c12;
+            --background-color: #f5f5f5;
+            --text-color: #333333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group.hidden {
+            display: none;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            background-color: #fff;
+        }
+
+        .radio-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .radio-group-servicos {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .radio-option {
+            position: relative;
+        }
+
+        .radio-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .radio-option label {
+            display: block;
+            text-align: center;
+            background-color: #eee;
+            padding: 10px 0;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .radio-option input[type="radio"]:checked + label {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-hover);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-submit {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-submit.modo-edicao {
+            background-color: var(--warning-color);
+        }
+
+        .btn-cancel {
+            background-color: #7f8c8d;
+            color: white;
+            display: none;
+        }
+
+        .btn-export {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-export:hover {
+            background-color: var(--secondary-hover);
+        }
+
+        .section-divider {
+            margin-top: 25px;
+            border-top: 2px solid #ddd;
+            padding-top: 15px;
+        }
+
+        .history-section {
+            margin-top: 30px;
+            border-top: 2px solid #ddd;
+            padding-top: 20px;
+        }
+
+        .history-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        .record-card {
+            background: #fafafa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .record-details {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .record-details strong {
+            color: #111;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .card-actions button {
+            width: 50%;
+            padding: 6px;
+            font-size: 12px;
+            margin-top: 0;
+        }
+
+        .btn-card-edit {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-card-edit:hover {
+            background-color: var(--secondary-hover);
+        }
+
+        .btn-delete {
+            background-color: #f5f5f5;
+            color: #999;
+            border: 1px solid #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-delete.active {
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 id="tituloFormulario">Apontamento Colheita de Milho <br> (Safra 25/26) </h2>
+    
+    <form id="registroForm" novalidate>
+        <!-- Campos Fixos que NÃO são limpos ao salvar -->
+        <div class="form-group">
+            <label for="nome_operador">Nome do Operador</label>
+            <input type="text" id="nome_operador" required placeholder="EX: JOAO SILVA" pattern="[A-Z\s]+" title="Apenas letras maiúsculas, sem acentos ou caracteres especiais.">
+        </div>
+
+        <div class="form-group">
+            <label for="cod_maquina">Código da Minha Máquina</label>
+            <input type="text" id="cod_maquina" required placeholder="Ex: 4" inputmode="numeric" pattern="[0-9]+">
+        </div>
+
+        <div class="form-group">
+            <label>Minha Máquina</label>
+            <div class="radio-group">
+                <div class="radio-option">
+                    <input type="radio" id="maq_colheitadeira" name="minha_maquina" value="Colheitadeira" required>
+                    <label for="maq_colheitadeira">Colheitadeira</label>
+                </div>
+                <div class="radio-option">
+                    <input type="radio" id="maq_bazuca" name="minha_maquina" value="Bazuca">
+                    <label for="maq_bazuca">Bazuca</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campo Condicional Máquina Coletada -->
+        <div class="form-group hidden" id="grupo_maquina_coletada">
+            <label for="maquina_coletada">Máquina Coletada</label>
+            <input type="text" id="maquina_coletada" placeholder="Ex: 326" inputmode="numeric" pattern="[0-9]+">
+        </div>
+
+        <!-- Campos que SÃO limpos ao salvar -->
+        <div class="form-group">
+            <label for="data">Data da Operação</label>
+            <input type="date" id="data" required>
+        </div>
+
+        <!-- Campo Fazenda com Autocompletar -->
+        <div class="form-group">
+            <label for="fazenda">Fazenda</label>
+            <input type="text" id="fazenda" list="lista_fazendas" required placeholder="Digite ou selecione a fazenda">
+            
+            <datalist id="lista_fazendas">
+                <option value="BRASIL"></option>
+                <option value="BELA VISTA"></option>
+                <option value="JULICE"></option>
+                <option value="JAD"></option>
+                <option value="BARREIRO"></option>
+                <option value="IRMAS"></option>
+                <option value="GRAO DE OURO"></option>
+                <option value="CHUPE"></option>
+                <option value="JOAO FONSECA"></option>
+                <option value="FRANCES"></option>
+                <option value="PERDIZ"></option>
+                <option value="POUSO ALTO"></option>
+                <option value="SAO JOAO"></option>
+                <option value="SONHO VERDE (CONFINAMENTO)"></option>
+                <option value="VITORIA"></option>
+                <option value="SOSSEGO"></option>
+            </datalist>
+        </div>
+
+        <div class="form-group">
+            <label for="talhao">Talhão</label>
+            <input type="text" id="talhao" required placeholder="Ex: 12" inputmode="numeric" pattern="[0-9]+">
+        </div>
+
+        <div class="form-group">
+            <label>Volume da Carga</label>
+            <div class="radio-group-servicos">
+                <div class="radio-option">
+                    <input type="radio" id="vol_1" name="volume_carga" value="1/4" required>
+                    <label for="vol_1">1/4</label>
+                </div>
+                <div class="radio-option">
+                    <input type="radio" id="vol_2" name="volume_carga" value="2/4">
+                    <label for="vol_2">2/4</label>
+                </div>
+                <div class="radio-option">
+                    <input type="radio" id="vol_3" name="volume_carga" value="3/4">
+                    <label for="vol_3">3/4</label>
+                </div>
+                <div class="radio-option">
+                    <input type="radio" id="vol_4" name="volume_carga" value="4/4">
+                    <label for="vol_4">4/4</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campo Hectares (Condicional - Oculto se for Bazuca) -->
+        <div class="form-group" id="grupo_hectares">
+            <label for="hectares">Hectares Colhidos</label>
+            <input type="number" id="hectares" step="0.01" required placeholder="Ex: 1,25">
+        </div>
+
+        <div class="form-group">
+            <label for="cod_veiculo_destino">Veículo de Destino</label>
+            <input type="text" id="cod_veiculo_destino" required placeholder="Ex: 10" inputmode="numeric" pattern="[0-9]+">
+        </div>
+
+        <button type="submit" class="btn-submit" id="btnSalvar">Salvar Registro</button>
+        <button type="button" class="btn-cancel" id="btnCancelarEdicao">Cancelar Edição</button>
+    </form>
+
+    <!-- Sessão de Exportação -->
+    <div class="section-divider">
+        <button type="button" class="btn-export" id="btnExportarCSV" style="background-color: #27ae60;">Exportar Todos (CSV + WhatsApp)</button>
+        <div class="form-group" style="margin-top: 15px;">
+            <label for="filtro_data_pdf">Filtrar Data para Exportar PDF</label>
+            <input type="date" id="filtro_data_pdf">
+        </div>
+        <button type="button" class="btn-export" id="btnExportarPDF">Exportar Tabela Diária (PDF)</button>
+    </div>
+
+    <div class="history-section">
+        <h3 class="history-title">Histórico Local</h3>
+        <div id="historicoLista"></div>
+    </div>
+</div>
+
+<script>
+    const STORAGE_KEY = 'coleta_campo_dados';
+    let idRegistroEmEdicao = null;
+
+    const FAZENDAS_PERMITIDAS = [
+        "BRASIL", "BELA VISTA", "JULICE", "JAD", "BARREIRO", "IRMAS", 
+        "GRAO DE OURO", "CHUPE", "JOAO FONSECA", "FRANCES", "PERDIZ", 
+        "POUSO ALTO", "SAO JOAO", "SONHO VERDE (CONFINAMENTO)", "VITORIA", "SOSSEGO"
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        configurarEventosCondicionais();
+        configurarRestricoesTeclado();
+        carregarUltimoEstado();
+        renderizarHistorico();
+        
+        document.getElementById('btnCancelarEdicao').addEventListener('click', cancelarEdicao);
+        document.getElementById('btnExportarPDF').addEventListener('click', exportarPDF);
+        document.getElementById('btnExportarCSV').addEventListener('click', exportarCSV);
+        
+        document.getElementById('filtro_data_pdf').value = new Date().toISOString().substring(0, 10);
+    });
+
+    // Sanitização e validação em tempo real dos inputs
+    function configurarRestricoesTeclado() {
+        const inputNome = document.getElementById('nome_operador');
+        const inputCodMaquina = document.getElementById('cod_maquina');
+        const inputMaquinaColetada = document.getElementById('maquina_coletada');
+        const inputFazenda = document.getElementById('fazenda');
+        const inputTalhao = document.getElementById('talhao');
+        const inputVeiculo = document.getElementById('cod_veiculo_destino');
+
+        // Nome do operador: Somente letras maiúsculas e espaços
+        inputNome.addEventListener('input', function() {
+            let valor = this.value.toUpperCase();
+            valor = valor.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            valor = valor.replace(/[^A-Z\s]/g, "");
+            this.value = valor;
+        });
+
+        // Código da máquina: Somente inteiros
+        inputCodMaquina.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '');
+        });
+
+        // Máquina coletada: Somente inteiros
+        inputMaquinaColetada.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '');
+        });
+
+        // Fazenda: Força letras maiúsculas durante a digitação
+        inputFazenda.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+
+        // Talhão: Somente inteiros
+        inputTalhao.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '');
+        });
+
+        // Veículo de destino: Somente inteiros
+        inputVeiculo.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '');
+        });
+    }
+
+    // Retorna a data de hoje formatada em YYYY-MM-DD local do celular
+    function obterDataLocalHoje() {
+        const d = new Date();
+        const dia = String(d.getDate()).padStart(2, '0');
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        const ano = d.getFullYear();
+        return `${ano}-${mes}-${dia}`;
+    }
+
+    function obterHoraAtual() {
+        const agora = new Date();
+        const horas = String(agora.getHours()).padStart(2, '0');
+        const minutos = String(agora.getMinutes()).padStart(2, '0');
+        const segundos = String(agora.getSeconds()).padStart(2, '0');
+        return `${horas}:${minutos}:${segundos}`;
+    }
+
+    // Função de formatação para exibir data no formato dd/mm/aa + hora
+    function formatarDataHoraParaExibicao(dataOriginal) {
+        if (!dataOriginal || dataOriginal.length < 10) return dataOriginal;
+        
+        const parteData = dataOriginal.substring(0, 10); // "YYYY-MM-DD"
+        const parteHora = dataOriginal.substring(11); // "HH:MM:SS" (se houver)
+        
+        const partes = parteData.split('-');
+        if (partes.length !== 3) return dataOriginal;
+        
+        const anoCompleto = partes[0]; // "YYYY"
+        const mes = partes[1]; // "MM"
+        const dia = partes[2]; // "DD"
+        
+        const anoCurto = anoCompleto.substring(2); // "YY"
+        const dataFormatada = `${dia}/${mes}/${anoCurto}`;
+        
+        return parteHora ? `${dataFormatada} ${parteHora}` : dataFormatada;
+    }
+
+    // Configuração dos eventos de exibição dinâmica de campos e alteração de obrigatoriedade
+    function configurarEventosCondicionais() {
+        const radiosMinhaMaquina = document.getElementsByName('minha_maquina');
+        const grupoMaquinaColetada = document.getElementById('grupo_maquina_coletada');
+        const inputMaquinaColetada = document.getElementById('maquina_coletada');
+        const grupoHectares = document.getElementById('grupo_hectares');
+        const inputHectares = document.getElementById('hectares');
+
+        radiosMinhaMaquina.forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (radio.value === 'Bazuca') {
+                    grupoMaquinaColetada.classList.remove('hidden');
+                    inputMaquinaColetada.required = true;
+                    
+                    grupoHectares.classList.add('hidden');
+                    inputHectares.required = false;
+                    inputHectares.value = '';
+                } else {
+                    grupoMaquinaColetada.classList.add('hidden');
+                    inputMaquinaColetada.required = false;
+                    inputMaquinaColetada.value = '';
+                    
+                    grupoHectares.classList.remove('hidden');
+                    inputHectares.required = true;
+                }
+            });
+        });
+    }
+
+    // Validação Manual Detalhada de Erros para Exibição dos Alertas
+    function validarFormulario(dados) {
+        if (!dados.operador) {
+            alert("Erro: O campo 'Nome do Operador' é obrigatório.");
+            document.getElementById('nome_operador').focus();
+            return false;
+        }
+        if (!/^[A-Z\s]+$/.test(dados.operador)) {
+            alert("Erro: O 'Nome do Operador' deve conter apenas letras maiúsculas, sem caracteres especiais ou acentos.");
+            document.getElementById('nome_operador').focus();
+            return false;
+        }
+
+        if (!dados.codMaquina) {
+            alert("Erro: O campo 'Código da Minha Máquina' é obrigatório.");
+            document.getElementById('cod_maquina').focus();
+            return false;
+        }
+        if (parseInt(dados.codMaquina, 10) === 0) {
+            alert("Erro: O 'Código da Minha Máquina' não pode ser igual a zero.");
+            document.getElementById('cod_maquina').focus();
+            return false;
+        }
+
+        if (!dados.minhaMaquinaRadio) {
+            alert("Erro: Selecione uma opção em 'Minha Máquina' (Colheitadeira ou Bazuca).");
+            return false;
+        }
+
+        const minhaMaquinaVal = dados.minhaMaquinaRadio.value;
+
+        // Valida Máquina Coletada apenas se o campo estiver visível (Bazuca)
+        if (minhaMaquinaVal === 'Bazuca') {
+            if (!dados.maqColetada) {
+                alert("Erro: Para 'Bazuca', o campo 'Máquina Coletada' é obrigatório.");
+                document.getElementById('maquina_coletada').focus();
+                return false;
+            }
+            if (parseInt(dados.maqColetada, 10) === 0) {
+                alert("Erro: O campo 'Máquina Coletada' não pode ser igual a zero.");
+                document.getElementById('maquina_coletada').focus();
+                return false;
+            }
+        }
+
+        if (!dados.dataSelecionada) {
+            alert("Erro: O campo 'Data da Operação' é obrigatório.");
+            document.getElementById('data').focus();
+            return false;
+        }
+
+        // Regra de Validação Temporal para Novos Registros
+        if (idRegistroEmEdicao === null) {
+            const hoje = obterDataLocalHoje();
+            if (dados.dataSelecionada !== hoje) {
+                alert(`Erro: Novos registros só podem ser criados com a data de hoje (${hoje.split('-').reverse().join('/')}).`);
+                document.getElementById('data').focus();
+                return false;
+            }
+        }
+
+        if (!dados.fazendaValor) {
+            alert("Erro: O campo 'Fazenda' é obrigatório.");
+            document.getElementById('fazenda').focus();
+            return false;
+        }
+        if (!FAZENDAS_PERMITIDAS.includes(dados.fazendaValor)) {
+            alert(`Erro: A fazenda '${dados.fazendaOriginal}' é inválida! Selecione uma opção válida da lista (Ex: BRASIL, BELA VISTA, JULICE, etc.).`);
+            document.getElementById('fazenda').focus();
+            return false;
+        }
+
+        if (!dados.talhao) {
+            alert("Erro: O campo 'Talhão' é obrigatório.");
+            document.getElementById('talhao').focus();
+            return false;
+        }
+        if (parseInt(dados.talhao, 10) === 0) {
+            alert("Erro: O campo 'Talhão' não pode ser igual a zero.");
+            document.getElementById('talhao').focus();
+            return false;
+        }
+
+        if (!dados.volumeCargaRadio) {
+            alert("Erro: Selecione uma opção em 'Volume da Carga'.");
+            return false;
+        }
+
+        // Valida Hectares apenas se o campo estiver visível (Colheitadeira)
+        if (minhaMaquinaVal === 'Colheitadeira') {
+            if (!dados.hectaresVal) {
+                alert("Erro: Para 'Colheitadeira', o campo 'Hectares Colhidos' é obrigatório.");
+                document.getElementById('hectares').focus();
+                return false;
+            }
+            if (isNaN(parseFloat(dados.hectaresVal)) || parseFloat(dados.hectaresVal) <= 0) {
+                alert("Erro: O campo 'Hectares Colhidos' deve conter um número decimal maior que zero (Ex: 1,25).");
+                document.getElementById('hectares').focus();
+                return false;
+            }
+        }
+
+        if (!dados.veiculo) {
+            alert("Erro: O campo 'Veículo de Destino' é obrigatório.");
+            document.getElementById('cod_veiculo_destino').focus();
+            return false;
+        }
+        if (parseInt(dados.veiculo, 10) === 0) {
+            alert("Erro: O campo 'Veículo de Destino' não pode ser igual a zero.");
+            document.getElementById('cod_veiculo_destino').focus();
+            return false;
+        }
+
+        return true;
+    }
+
+    // Salvar ou Atualizar Registro com Validação Estrita de Campos Obrigatórios e de Fazendas
+    document.getElementById('registroForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const dadosForm = {
+            operador: document.getElementById('nome_operador').value.trim(),
+            codMaquina: document.getElementById('cod_maquina').value.trim(),
+            minhaMaquinaRadio: document.querySelector('input[name="minha_maquina"]:checked'),
+            maqColetada: document.getElementById('maquina_coletada').value.trim(),
+            dataSelecionada: document.getElementById('data').value.trim(),
+            fazendaOriginal: document.getElementById('fazenda').value, 
+            fazendaValor: document.getElementById('fazenda').value.toUpperCase().trim(),
+            talhao: document.getElementById('talhao').value.trim(),
+            volumeCargaRadio: document.querySelector('input[name="volume_carga"]:checked'),
+            hectaresVal: document.getElementById('hectares').value.trim(),
+            veiculo: document.getElementById('cod_veiculo_destino').value.trim()
+        };
+
+        if (!validarFormulario(dadosForm)) {
+            return;
+        }
+
+        const registros = obterRegistros();
+        const minhaMaquinaVal = dadosForm.minhaMaquinaRadio.value;
+        const valorHectares = minhaMaquinaVal === 'Colheitadeira' ? parseFloat(dadosForm.hectaresVal) : null;
+
+        if (idRegistroEmEdicao !== null) {
+            const index = registros.findIndex(r => r.id === idRegistroEmEdicao);
+            if (index !== -1) {
+                registros[index].data = `${dadosForm.dataSelecionada} ${obterHoraAtual()}`;
+                registros[index].nome_operador = dadosForm.operador;
+                registros[index].cod_maquina = dadosForm.codMaquina;
+                registros[index].minha_maquina = minhaMaquinaVal;
+                registros[index].maquina_coletada = dadosForm.maqColetada;
+                registros[index].fazenda = dadosForm.fazendaValor;
+                registros[index].talhao = talhao;
+                registros[index].volume_carga = dadosForm.volumeCargaRadio.value;
+                registros[index].hectares = valorHectares;
+                registros[index].cod_veiculo_destino = dadosForm.veiculo;
+
+                salvarRegistros(registros);
+                alert('Registro atualizado localmente.');
+                cancelarEdicao();
+            }
+        } else {
+            const dataComHora = `${dadosForm.dataSelecionada} ${obterHoraAtual()}`;
+
+            const dataRegistro = {
+                id: Date.now(),
+                timestamp_criacao: new Date().toISOString(),
+                data: dataComHora,
+                nome_operador: dadosForm.operador,
+                cod_maquina: dadosForm.codMaquina,
+                minha_maquina: minhaMaquinaVal,
+                maquina_coletada: dadosForm.maqColetada,
+                fazenda: dadosForm.fazendaValor,
+                talhao: dadosForm.talhao,
+                volume_carga: dadosForm.volumeCargaRadio.value,
+                hectares: valorHectares,
+                cod_veiculo_destino: dadosForm.veiculo
+            };
+
+            registros.push(dataRegistro);
+            salvarRegistros(registros);
+
+            // Limpa apenas os campos variáveis
+            document.getElementById('data').value = obterDataLocalHoje();
+            document.getElementById('fazenda').value = '';
+            document.getElementById('talhao').value = '';
+            document.getElementById('hectares').value = '';
+            document.getElementById('cod_veiculo_destino').value = '';
+            
+            const checkedVolume = document.querySelector('input[name="volume_carga"]:checked');
+            if (checkedVolume) checkedVolume.checked = false;
+
+            document.getElementById('maquina_coletada').value = '';
+
+            alert('Registro salvo localmente.');
+        }
+
+        renderizarHistorico();
+    });
+
+    window.carregarParaEdicao = function(id) {
+        const registros = obterRegistros();
+        const registro = registros.find(r => r.id === id);
+
+        if (!registro) return;
+
+        idRegistroEmEdicao = id;
+
+        document.getElementById('tituloFormulario').innerText = "Editando Registro";
+        const btnSalvar = document.getElementById('btnSalvar');
+        btnSalvar.innerText = "Atualizar Registro";
+        btnSalvar.classList.add('modo-edicao');
+        document.getElementById('btnCancelarEdicao').style.display = 'block';
+
+        // Desabilita alteração do campo de data durante edições antigas
+        const inputData = document.getElementById('data');
+        inputData.value = registro.data.substring(0, 10);
+        inputData.disabled = true;
+
+        document.getElementById('nome_operador').value = registro.nome_operador;
+        document.getElementById('cod_maquina').value = registro.cod_maquina;
+        document.getElementById('fazenda').value = registro.fazenda;
+        document.getElementById('talhao').value = registro.talhao;
+        document.getElementById('cod_veiculo_destino').value = registro.cod_veiculo_destino;
+
+        const radioMaquina = document.querySelector(`input[name="minha_maquina"][value="${registro.minha_maquina}"]`);
+        if (radioMaquina) {
+            radioMaquina.checked = true;
+            radioMaquina.dispatchEvent(new Event('change'));
+        }
+
+        if (registro.minha_maquina === 'Bazuca') {
+            document.getElementById('maquina_coletada').value = registro.maquina_coletada;
+        } else {
+            document.getElementById('hectares').value = registro.hectares;
+        }
+
+        const radioVolume = document.querySelector(`input[name="volume_carga"][value="${registro.volume_carga}"]`);
+        if (radioVolume) {
+            radioVolume.checked = true;
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    function cancelarEdicao() {
+        idRegistroEmEdicao = null;
+        document.getElementById('tituloFormulario').innerText = "Coleta de Campo";
+        const btnSalvar = document.getElementById('btnSalvar');
+        btnSalvar.innerText = "Salvar Registro";
+        btnSalvar.classList.remove('modo-edicao');
+        document.getElementById('btnCancelarEdicao').style.display = 'none';
+
+        // Reativa o campo de data
+        document.getElementById('data').disabled = false;
+
+        carregarUltimoEstado();
+    }
+
+    // Exportação Física para arquivo CSV no Celular + Redirecionamento de WhatsApp
+    function exportarCSV() {
+        const registros = obterRegistros();
+        if (registros.length === 0) {
+            alert('Não há dados locais para exportar.');
+            return;
+        }
+
+        let csvContent = '\uFEFF'; 
+        csvContent += 'ID;Data Operacao;Operador;Cod Maquina;Tipo Maquina;Maquina Coletada;Fazenda;Talhao;Volume Carga;Hectares;Veiculo Destino;Criado Em\r\n';
+
+        registros.forEach(r => {
+            const maqColetada = r.maquina_coletada || "-";
+            const valorHec = r.hectares !== null ? r.hectares.toString().replace('.', ',') : "-";
+            
+            const linha = [
+                r.id,
+                r.data,
+                r.nome_operador.replace(/;/g, ','),
+                r.cod_maquina.replace(/;/g, ','),
+                r.minha_maquina,
+                maqColetada.replace(/;/g, ','),
+                r.fazenda.replace(/;/g, ','),
+                r.talhao.replace(/;/g, ','),
+                r.volume_carga,
+                valorHec,
+                r.cod_veiculo_destino.replace(/;/g, ','),
+                r.timestamp_criacao
+            ];
+            csvContent += linha.join(';') + '\r\n';
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `relatorio_coleta_${obterDataFormatada()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setTimeout(() => {
+            const message = encodeURIComponent(`Olá, segue anexo o relatório CSV de coleta de campo gerado no dispositivo.`);
+            window.open(`https://api.whatsapp.com/send?text=${message}`, '_blank');
+        }, 1000);
+    }
+
+    // Geração de PDF Visual em Formato Tabela com Assinatura e Data no formato dd/mm/aa
+    function exportarPDF() {
+        const dataFiltro = document.getElementById('filtro_data_pdf').value;
+        if (!dataFiltro) {
+            alert('Por favor, escolha uma data para exportar o PDF.');
+            return;
+        }
+
+        const registros = obterRegistros();
+        const filtrados = registros.filter(r => r.data.startsWith(dataFiltro));
+
+        if (filtrados.length === 0) {
+            alert('Nenhum registro encontrado para a data escolhida.');
+            return;
+        }
+
+        filtrados.sort((a, b) => new Date(a.data.replace(' ', 'T')) - new Date(b.data.replace(' ', 'T')));
+
+        const dataFormatadaPt = dataFiltro.split('-').reverse().join('/');
+
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow.document;
+
+        let htmlPrint = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Relatorio_Diario_${dataFiltro}</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 15px;
+                    color: #000;
+                    background-color: #fff;
+                }
+                h3 {
+                    text-align: center;
+                    margin-bottom: 5px;
+                    font-size: 16px;
+                }
+                p {
+                    text-align: center;
+                    font-size: 12px;
+                    margin-bottom: 20px;
+                    color: #555;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 10px;
+                }
+                th, td {
+                    border: 1px solid #111111;
+                    padding: 6px 8px;
+                    text-align: left;
+                    font-size: 10px;
+                }
+                th {
+                    background-color: #f2f2f2;
+                    font-weight: bold;
+                }
+                .signature-container {
+                    margin-top: 50px;
+                    display: flex;
+                    justify-content: space-between;
+                    page-break-inside: avoid;
+                }
+                .signature-block {
+                    width: 30%;
+                    text-align: center;
+                    font-size: 11px;
+                }
+                .signature-line {
+                    border-top: 1px solid #000;
+                    margin-bottom: 5px;
+                    margin-top: 40px;
+                }
+                @media print {
+                    @page { margin: 1cm; }
+                }
+            </style>
+        </head>
+        <body>
+            <h3>Relatório Diário de Operação de Campo</h3>
+            <p>Data de Referência: ${dataFormatadaPt} | Gerado em: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Operador</th>
+                        <th>Cód. Maq.</th>
+                        <th>Tipo Máquina</th>
+                        <th>Máq. Coletada</th>
+                        <th>Fazenda</th>
+                        <th>Talhão</th>
+                        <th>Vol. Carga</th>
+                        <th>Hectares</th>
+                        <th>Veículo Dest.</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        filtrados.forEach(r => {
+            const maqColetada = r.maquina_coletada || "-";
+            const hecExibir = r.hectares !== null ? r.hectares.toString().replace('.', ',') : "-";
+            
+            // Converte a exibição da data no relatório para o formato DD/MM/YY HH:MM:SS
+            const dataRelatorioExibivel = formatarDataHoraParaExibicao(r.data);
+
+            htmlPrint += `
+                <tr>
+                    <td>${dataRelatorioExibivel}</td>
+                    <td>${r.nome_operador}</td>
+                    <td>${r.cod_maquina}</td>
+                    <td>${r.minha_maquina}</td>
+                    <td>${maqColetada}</td>
+                    <td>${r.fazenda}</td>
+                    <td>${r.talhao}</td>
+                    <td>${r.volume_carga}</td>
+                    <td>${hecExibir}</td>
+                    <td>${r.cod_veiculo_destino}</td>
+                </tr>
+            `;
+        });
+
+        htmlPrint += `
+                </tbody>
+            </table>
+
+            <div class="signature-container">
+                <div class="signature-block">
+                    <div class="signature-line"></div>
+                    <strong>Assinatura do Operador</strong>
+                </div>
+                <div class="signature-block">
+                    <div class="signature-line"></div>
+                    <strong>Assinatura do Supervisor</strong>
+                </div>
+                <div class="signature-block">
+                    <div class="signature-line"></div>
+                    <strong>Assinatura do Auditor</strong>
+                </div>
+            </div>
+        </body>
+        </html>
+        `;
+
+        doc.write(htmlPrint);
+        doc.close();
+
+        setTimeout(() => {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+            
+            setTimeout(() => {
+                document.body.removeChild(iframe);
+            }, 1000);
+        }, 500);
+    }
+
+    function obterRegistros() {
+        const dados = localStorage.getItem(STORAGE_KEY);
+        return dados ? JSON.parse(dados) : [];
+    }
+
+    function salvarRegistros(registros) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(registros));
+    }
+
+    function carregarUltimoEstado() {
+        const registros = obterRegistros();
+        if (registros.length > 0) {
+            const ultimo = registros[registros.length - 1];
+            
+            // Preserva Nome, Código e Tipo da Máquina conforme a última gravação
+            document.getElementById('nome_operador').value = ultimo.nome_operador;
+            document.getElementById('cod_maquina').value = ultimo.cod_maquina;
+            
+            const radioMaquina = document.querySelector(`input[name="minha_maquina"][value="${ultimo.minha_maquina}"]`);
+            if (radioMaquina) {
+                radioMaquina.checked = true;
+                radioMaquina.dispatchEvent(new Event('change'));
+            }
+
+            // Força a limpeza dos demais campos de operação
+            document.getElementById('data').value = obterDataLocalHoje();
+            document.getElementById('fazenda').value = '';
+            document.getElementById('talhao').value = '';
+            document.getElementById('hectares').value = '';
+            document.getElementById('cod_veiculo_destino').value = '';
+            document.getElementById('maquina_coletada').value = '';
+            
+            const checkedVolume = document.querySelector('input[name="volume_carga"]:checked');
+            if (checkedVolume) checkedVolume.checked = false;
+        } else {
+            document.getElementById('data').value = obterDataLocalHoje();
+            document.getElementById('nome_operador').value = '';
+            document.getElementById('cod_maquina').value = '';
+            document.getElementById('fazenda').value = '';
+            document.getElementById('talhao').value = '';
+            document.getElementById('hectares').value = '';
+            document.getElementById('cod_veiculo_destino').value = '';
+            document.getElementById('maquina_coletada').value = '';
+            
+            const checkedMaquina = document.querySelector('input[name="minha_maquina"]:checked');
+            if (checkedMaquina) checkedMaquina.checked = false;
+            
+            const checkedVolume = document.querySelector('input[name="volume_carga"]:checked');
+            if (checkedVolume) checkedVolume.checked = false;
+
+            document.getElementById('grupo_maquina_coletada').classList.add('hidden');
+            document.getElementById('grupo_hectares').classList.remove('hidden');
+        }
+    }
+
+    function renderizarHistorico() {
+        const lista = document.getElementById('historicoLista');
+        lista.innerHTML = '';
+        const registros = obterRegistros();
+
+        if (registros.length === 0) {
+            lista.innerHTML = '<p style="color: #888; font-size: 14px;">Nenhum registro armazenado.</p>';
+            return;
+        }
+
+        registros.slice().reverse().forEach(r => {
+            const card = document.createElement('div');
+            card.className = 'record-card';
+
+            const diasCriado = calcularDiferencaDias(r.timestamp_criacao);
+            const podeExcluir = diasCriado >= 2;
+
+            const infoMaquinaColetada = r.minha_maquina === 'Bazuca' ? ` | <strong>Coletada:</strong> ${r.maquina_coletada}` : '';
+            const exibirHectares = r.minha_maquina === 'Colheitadeira' ? ` | <strong>Hectares:</strong> ${r.hectares}` : '';
+
+            // Converte a exibição da data no histórico local para o formato DD/MM/YY HH:MM:SS
+            const dataFormatada = formatarDataHoraParaExibicao(r.data);
+
+            card.innerHTML = `
+                <div class="record-details">
+                    <strong>Data/Hora:</strong> ${dataFormatada}<br>
+                    <strong>Operador:</strong> ${r.nome_operador} | <strong>Fazenda:</strong> ${r.fazenda} | <strong>Talhão:</strong> ${r.talhao}<br>
+                    <strong>Máquina:</strong> ${r.minha_maquina}${infoMaquinaColetada}${exibirHectares}<br>
+                    <strong>Volume Carga:</strong> ${r.volume_carga} | <strong>Veículo:</strong> ${r.cod_veiculo_destino}<br>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-card-edit" onclick="carregarParaEdicao(${r.id})">Editar</button>
+                    <button class="btn-delete ${podeExcluir ? 'active' : ''}" 
+                            ${podeExcluir ? '' : 'disabled'} 
+                            onclick="excluirRegistro(${r.id}, ${podeExcluir})">
+                        ${podeExcluir ? 'Excluir' : `Bloqueado (${2 - Math.floor(diasCriado)}d restantes)`}
+                    </button>
+                </div>
+            `;
+            lista.appendChild(card);
+        });
+    }
+
+    function calcularDiferencaDias(dataISO) {
+        const criacao = new Date(dataISO);
+        const agora = new Date();
+        const diffTempo = Math.abs(agora - criacao);
+        return diffTempo / (1000 * 60 * 60 * 24);
+    }
+
+    window.excluirRegistro = function(id, podeExcluir) {
+        if (!podeExcluir) {
+            alert('Regra de Segurança: Registros com menos de 2 dias não podem ser apagados.');
+            return;
+        }
+
+        if (confirm('Tem certeza que deseja apagar permanentemente este registro?')) {
+            let registros = obterRegistros();
+            registros = registros.filter(r => r.id !== id);
+            salvarRegistros(registros);
+            renderizarHistorico();
+            
+            if (idRegistroEmEdicao === id) {
+                document.getElementById('data').disabled = false;
+                cancelarEdicao();
+            }
+        }
+    }
+
+    function obterDataFormatada() {
+        const d = new Date();
+        const dia = String(d.getDate()).padStart(2, '0');
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        const ano = d.getFullYear();
+        return `${dia}_${mes}_${ano}`;
+    }
+</script>
+
+</body>
+</html>
