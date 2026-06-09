@@ -1,7 +1,8 @@
-const CACHE_NAME = 'coleta-campo-v6'; // v6 limpa de vez as estruturas de tela do modal antigo
+const CACHE_NAME = 'coleta-campo-v7'; // Nova versão v7 para forçar atualização no celular
 const ASSETS = [
   './',
-  './index.html'
+  './index.html',
+  'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js' // Salva a biblioteca no cache offline do celular
 ];
 
 self.addEventListener('install', event => {
