@@ -212,7 +212,6 @@
             background-color: var(--secondary-hover);
         }
 
-        /* Força a estilização vermelha do botão de exclusão ativa */
         .btn-delete {
             background-color: var(--danger-color) !important;
             color: white !important;
@@ -337,11 +336,11 @@
 
     <!-- Sessão de Exportação -->
     <div class="section-divider">
-        <button type="button" class="btn-export" id="btnExportarCSV" style="background-color: #27ae60;">Exportar Todos (CSV)</button>
-        <div class="form-group" style="margin-top: 15px;">
-            <label for="filtro_data_pdf">Filtrar Data para Exportar PDF</label>
+        <div class="form-group">
+            <label for="filtro_data_pdf">Selecionar Data para Exportações</label>
             <input type="date" id="filtro_data_pdf">
         </div>
+        <button type="button" class="btn-export" id="btnExportarCSV" style="background-color: #27ae60;">Exportar CSV da Data Selecionada</button>
         <button type="button" class="btn-export" id="btnExportarPDF">Exportar Tabela Diária (PDF)</button>
     </div>
 
@@ -648,7 +647,7 @@
                 registros[index].cod_veiculo_destino = dadosForm.veiculo;
 
                 salvarRegistros(registros);
-                alert('Registro atualizado localmente.');
+                alert('Registro updated localmente.');
                 cancelarEdicao();
             }
         } else {
@@ -749,18 +748,27 @@
         carregarUltimoEstado();
     }
 
-    // Exportação Física para arquivo CSV no Celular (Sem disparar o WhatsApp)
+    // Exportação Física para arquivo CSV no Celular - FILTRADO POR DATA SELECIONADA
     function exportarCSV() {
+        const dataFiltro = document.getElementById('filtro_data_pdf').value;
+        if (!dataFiltro) {
+            alert('Por favor, selecione uma data no filtro para exportar o CSV.');
+            return;
+        }
+
         const registros = obterRegistros();
-        if (registros.length === 0) {
-            alert('Não há dados locais para exportar.');
+        // Filtra os registros que pertencem à data escolhida no filtro
+        const filtrados = registros.filter(r => r.data.startsWith(dataFiltro));
+
+        if (filtrados.length === 0) {
+            alert('Nenhum registro encontrado localmente para a data selecionada no filtro.');
             return;
         }
 
         let csvContent = '\uFEFF'; 
         csvContent += 'ID;Data Operacao;Operador;Cod Maquina;Tipo Maquina;Maquina Coletada;Fazenda;Talhao;Volume Carga;Hectares;Veiculo Destino;Criado Em\r\n';
 
-        registros.forEach(r => {
+        filtrados.forEach(r => {
             const maqColetada = r.maquina_coletada || "-";
             const valorHec = r.hectares !== null ? r.hectares.toString().replace('.', ',') : "-";
             
@@ -781,14 +789,11 @@
             csvContent += linha.join(';') + '\r\n';
         });
 
-        // Configuração do Nome do Arquivo Customizado
         const operadorInput = document.getElementById('nome_operador').value.trim();
         const operadorLimpo = operadorInput ? operadorInput.replace(/\s+/g, '_') : 'OPERADOR';
-        const dataFiltro = document.getElementById('filtro_data_pdf').value;
-        const dataFiltroLimpa = dataFiltro ? dataFiltro.split('-').reverse().join('_') : obterDataFormatada();
+        const dataFiltroLimpa = dataFiltro.split('-').reverse().join('_');
         const nomeArquivoFinal = `${operadorLimpo}_${dataFiltroLimpa}.csv`;
 
-        // Download físico no navegador do celular
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -799,7 +804,7 @@
         document.body.removeChild(link);
     }
 
-    // Geração de PDF Visual com abertura em NOVA ABA (Apenas abre a página, sem forçar tela de impressão)
+    // Geração de PDF Visual em Formato Tabela Aberta via Blob URL (Evita abas brancas em navegadores móveis)
     function exportarPDF() {
         const dataFiltro = document.getElementById('filtro_data_pdf').value;
         if (!dataFiltro) {
@@ -819,13 +824,7 @@
 
         const dataFormatadaPt = dataFiltro.split('-').reverse().join('/');
 
-        // Abre uma nova janela/aba limpa no celular do operador contendo os dados
-        const novaJanela = window.open('', '_blank');
-        if (!novaJanela) {
-            alert('Aviso: Ative a permissão para aberturas de pop-ups neste navegador para poder visualizar o PDF.');
-            return;
-        }
-
+        // Construção do código HTML completo a ser exibido no PDF
         let htmlPrint = `
         <!DOCTYPE html>
         <html>
@@ -917,7 +916,6 @@
             </style>
         </head>
         <body>
-            <!-- Barra de utilitários no topo da tela para controle do operador -->
             <div class="no-print-bar">
                 <button class="btn-print" onclick="window.print()">Salvar como PDF ou Imprimir</button>
                 <button class="btn-close" onclick="window.close()">Voltar ao Aplicativo</button>
@@ -986,10 +984,15 @@
         </html>
         `;
 
-        // O PDF agora apenas ABRE na nova janela. 
-        // A janela de impressão nativa só abrirá quando/se o usuário clicar no botão azul "Salvar como PDF ou Imprimir".
-        doc.write(htmlPrint);
-        doc.close();
+        // Geração do PDF em formato de arquivo BLOB para compatibilidade total com navegadores mobile
+        const blob = new Blob([htmlPrint], { type: 'text/html;charset=utf-8;' });
+        const blobUrl = URL.createObjectURL(blob);
+        
+        // Abre o link blob que carrega instantaneamente sem erros de segurança
+        const novaJanela = window.open(blobUrl, '_blank');
+        if (!novaJanela) {
+            alert('Aviso: Ative a permissão para aberturas de pop-ups neste navegador para poder visualizar o PDF.');
+        }
     }
 
     function obterRegistros() {
