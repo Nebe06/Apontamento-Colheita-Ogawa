@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coleta de Campo</title>
+    <!-- Importação da biblioteca leve de PDF (Será salva em cache pelo Service Worker) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
             --primary-color: #2e7d32;
@@ -341,7 +343,7 @@
             <input type="date" id="filtro_data_pdf">
         </div>
         <button type="button" class="btn-export" id="btnExportarCSV" style="background-color: #27ae60;">Exportar CSV da Data Selecionada</button>
-        <button type="button" class="btn-export" id="btnExportarPDF">Exportar Tabela Diária (PDF)</button>
+        <button type="button" class="btn-export" id="btnExportarPDF">Exportar PDF da Data Selecionada</button>
     </div>
 
     <div class="history-section">
@@ -803,7 +805,7 @@
         document.body.removeChild(link);
     }
 
-    // Geração de PDF Visual Direto por canal invisível (Iframe oculto) sem telas intermediárias
+    // Geração e download FÍSICO direto do arquivo .PDF
     function exportarPDF() {
         const dataFiltro = document.getElementById('filtro_data_pdf').value;
         if (!dataFiltro) {
@@ -823,83 +825,34 @@
 
         const dataFormatadaPt = dataFiltro.split('-').reverse().join('/');
 
-        // Construção do código HTML puro para impressão direta
+        // Construção do nome do arquivo padrão para o PDF
+        const operadorInput = document.getElementById('nome_operador').value.trim();
+        const operadorLimpo = operadorInput ? operadorInput.replace(/\s+/g, '_') : 'OPERADOR';
+        const dataFiltroLimpa = dataFiltro.split('-').reverse().join('_');
+        const nomeArquivoFinal = `${operadorLimpo}_${dataFiltroLimpa}.pdf`;
+
+        // Construção de um container div off-screen contendo a tabela visual do relatório
+        const elementoRelatorio = document.createElement('div');
+        elementoRelatorio.style.padding = '20px';
+        elementoRelatorio.style.backgroundColor = '#ffffff';
+
         let htmlPrint = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Relatorio_Diario_${dataFiltro}</title>
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    margin: 15px;
-                    color: #000;
-                    background-color: #fff;
-                }
-                h3 {
-                    text-align: center;
-                    margin-bottom: 5px;
-                    font-size: 16px;
-                }
-                p {
-                    text-align: center;
-                    font-size: 12px;
-                    margin-bottom: 20px;
-                    color: #555;
-                }
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-top: 10px;
-                }
-                th, td {
-                    border: 1px solid #111111;
-                    padding: 6px 8px;
-                    text-align: left;
-                    font-size: 10px;
-                }
-                th {
-                    background-color: #f2f2f2;
-                    font-weight: bold;
-                }
-                .signature-container {
-                    margin-top: 50px;
-                    display: flex;
-                    justify-content: space-between;
-                    page-break-inside: avoid;
-                }
-                .signature-block {
-                    width: 30%;
-                    text-align: center;
-                    font-size: 11px;
-                }
-                .signature-line {
-                    border-top: 1px solid #000;
-                    margin-bottom: 5px;
-                    margin-top: 40px;
-                }
-                @media print {
-                    @page { margin: 1cm; }
-                }
-            </style>
-        </head>
-        <body>
-            <h3>Relatório Diário de Operação de Campo</h3>
-            <p>Data de Referência: ${dataFormatadaPt} | Gerado em: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}</p>
-            <table>
+            <h3 style="text-align: center; margin-bottom: 5px; font-family: Arial, sans-serif; font-size: 16px;">Relatório Diário de Operação de Campo</h3>
+            <p style="text-align: center; font-family: Arial, sans-serif; font-size: 12px; margin-bottom: 20px; color: #555;">Data de Referência: ${dataFormatadaPt} | Gerado em: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}</p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-family: Arial, sans-serif;">
                 <thead>
-                    <tr>
-                        <th>Data/Hora</th>
-                        <th>Operador</th>
-                        <th>Cód. Maq.</th>
-                        <th>Tipo Máquina</th>
-                        <th>Máq. Coletada</th>
-                        <th>Fazenda</th>
-                        <th>Talhão</th>
-                        <th>Vol. Carga</th>
-                        <th>Hectares</th>
-                        <th>Veículo Dest.</th>
+                    <tr style="background-color: #f2f2f2;">
+                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Data/Hora</th>
+                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Operador</th>
+                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Cód. Maq.</th>
+                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Tipo Máquina</th>
+                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Máq. Coletada</th>
+                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Fazenda</th>
+                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Talhão</th>
+                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Vol. Carga</th>
+                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Hectares</th>
+                        <th style="border: 1px solid #111111; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left;">Veículo Dest.</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -912,16 +865,16 @@
 
             htmlPrint += `
                 <tr>
-                    <td>${dataRelatorioExibivel}</td>
-                    <td>${r.nome_operador}</td>
-                    <td>${r.cod_maquina}</td>
-                    <td>${r.minha_maquina}</td>
-                    <td>${maqColetada}</td>
-                    <td>${r.fazenda}</td>
-                    <td>${r.talhao}</td>
-                    <td>${r.volume_carga}</td>
-                    <td>${hecExibir}</td>
-                    <td>${r.cod_veiculo_destino}</td>
+                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${dataRelatorioExibivel}</td>
+                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${r.nome_operador}</td>
+                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${r.cod_maquina}</td>
+                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${r.minha_maquina}</td>
+                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${maqColetada}</td>
+                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${r.fazenda}</td>
+                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${r.talhao}</td>
+                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${r.volume_carga}</td>
+                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${hecExibir}</td>
+                    <td style="border: 1px solid #111111; padding: 6px 8px; font-size: 9px;">${r.cod_veiculo_destino}</td>
                 </tr>
             `;
         });
@@ -930,47 +883,42 @@
                 </tbody>
             </table>
 
-            <div class="signature-container">
-                <div class="signature-block">
-                    <div class="signature-line"></div>
+            <div style="margin-top: 50px; display: flex; justify-content: space-between; font-family: Arial, sans-serif;">
+                <div style="width: 30%; text-align: center; font-size: 10px;">
+                    <div style="border-top: 1px solid #000; margin-bottom: 5px; margin-top: 40px;"></div>
                     <strong>Assinatura do Operador</strong>
                 </div>
-                <div class="signature-block">
-                    <div class="signature-line"></div>
+                <div style="width: 30%; text-align: center; font-size: 10px;">
+                    <div style="border-top: 1px solid #000; margin-bottom: 5px; margin-top: 40px;"></div>
                     <strong>Assinatura do Supervisor</strong>
                 </div>
-                <div class="signature-block">
-                    <div class="signature-line"></div>
+                <div style="width: 30%; text-align: center; font-size: 10px;">
+                    <div style="border-top: 1px solid #000; margin-bottom: 5px; margin-top: 40px;"></div>
                     <strong>Assinatura do Auditor</strong>
                 </div>
             </div>
-        </body>
-        </html>
         `;
 
-        // Cria o iframe invisível para disparo direto
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
-        document.body.appendChild(iframe);
+        elementoRelatorio.innerHTML = htmlPrint;
+        document.body.appendChild(elementoRelatorio);
 
-        const doc = iframe.contentWindow.document;
-        doc.write(htmlPrint);
-        doc.close();
+        // Opções de configuração da biblioteca html2pdf
+        const opt = {
+            margin:       0.5,
+            filename:     nomeArquivoFinal,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, logging: false },
+            jsPDF:        { unit: 'cm', format: 'A4', orientation: 'landscape' } // Landscape para acomodar a tabela larga
+        };
 
-        // Dispara o download/gravação nativa diretamente do iframe e remove o componente em seguida
-        setTimeout(() => {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-            
-            setTimeout(() => {
-                document.body.removeChild(iframe);
-            }, 1000);
-        }, 500);
+        // Dispara o download FÍSICO direto sem abas, pop-ups ou telas nativas de impressora
+        html2pdf().set(opt).from(elementoRelatorio).save().then(() => {
+            // Remove o elemento temporário do DOM após o salvamento
+            document.body.removeChild(elementoRelatorio);
+        }).catch(err => {
+            console.error('Erro ao gerar o PDF offline:', err);
+            document.body.removeChild(elementoRelatorio);
+        });
     }
 
     function obterRegistros() {
