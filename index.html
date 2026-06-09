@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coleta de Campo</title>
-    <!-- Importação da biblioteca leve de PDF (Será salva em cache pelo Service Worker) -->
+    <!-- Importação da biblioteca leve de PDF (Salva em cache pelo Service Worker) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
@@ -705,13 +705,9 @@
         btnSalvar.classList.add('modo-edicao');
         document.getElementById('btnCancelarEdicao').style.display = 'block';
 
-        // Desabilita alteração do campo de data durante edições antigas
-        const inputData = document.getElementById('data');
-        inputData.value = registro.data.substring(0, 10);
-        inputData.disabled = true;
-
         document.getElementById('nome_operador').value = registro.nome_operador;
         document.getElementById('cod_maquina').value = registro.cod_maquina;
+        document.getElementById('data').value = registro.data.substring(0, 10);
         document.getElementById('fazenda').value = registro.fazenda;
         document.getElementById('talhao').value = registro.talhao;
         document.getElementById('cod_veiculo_destino').value = registro.cod_veiculo_destino;
@@ -805,7 +801,7 @@
         document.body.removeChild(link);
     }
 
-    // Geração e download FÍSICO direto do arquivo .PDF
+    // Geração e download FÍSICO direto do arquivo .PDF (Estabilizado para Mobile)
     function exportarPDF() {
         const dataFiltro = document.getElementById('filtro_data_pdf').value;
         if (!dataFiltro) {
@@ -833,8 +829,16 @@
 
         // Construção de um container div off-screen contendo a tabela visual do relatório
         const elementoRelatorio = document.createElement('div');
-        elementoRelatorio.style.padding = '20px';
+        elementoRelatorio.id = 'temp-pdf-render';
+        
+        // CSS em linha para renderizador html2canvas de alta compatibilidade
+        elementoRelatorio.style.position = 'absolute';
+        elementoRelatorio.style.left = '-9999px';
+        elementoRelatorio.style.top = '0';
+        elementoRelatorio.style.width = '1024px'; // Resolução estável para simular A4 Paisagem
+        elementoRelatorio.style.padding = '30px';
         elementoRelatorio.style.backgroundColor = '#ffffff';
+        elementoRelatorio.style.color = '#000000';
 
         let htmlPrint = `
             <h3 style="text-align: center; margin-bottom: 5px; font-family: Arial, sans-serif; font-size: 16px;">Relatório Diário de Operação de Campo</h3>
@@ -883,7 +887,7 @@
                 </tbody>
             </table>
 
-            <div style="margin-top: 50px; display: flex; justify-content: space-between; font-family: Arial, sans-serif;">
+            <div style="margin-top: 60px; display: flex; justify-content: space-between; font-family: Arial, sans-serif;">
                 <div style="width: 30%; text-align: center; font-size: 10px;">
                     <div style="border-top: 1px solid #000; margin-bottom: 5px; margin-top: 40px;"></div>
                     <strong>Assinatura do Operador</strong>
@@ -902,23 +906,23 @@
         elementoRelatorio.innerHTML = htmlPrint;
         document.body.appendChild(elementoRelatorio);
 
-        // Opções de configuração da biblioteca html2pdf
         const opt = {
             margin:       0.5,
             filename:     nomeArquivoFinal,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 2, logging: false },
-            jsPDF:        { unit: 'cm', format: 'A4', orientation: 'landscape' } // Landscape para acomodar a tabela larga
+            jsPDF:        { unit: 'cm', format: 'A4', orientation: 'landscape' }
         };
 
-        // Dispara o download FÍSICO direto sem abas, pop-ups ou telas nativas de impressora
-        html2pdf().set(opt).from(elementoRelatorio).save().then(() => {
-            // Remove o elemento temporário do DOM após o salvamento
-            document.body.removeChild(elementoRelatorio);
-        }).catch(err => {
-            console.error('Erro ao gerar o PDF offline:', err);
-            document.body.removeChild(elementoRelatorio);
-        });
+        // Atraso de segurança de 250ms para que o navegador renderize a tabela antes de salvar
+        setTimeout(() => {
+            html2pdf().set(opt).from(elementoRelatorio).save().then(() => {
+                document.body.removeChild(elementoRelatorio);
+            }).catch(err => {
+                console.error('Erro ao gerar o PDF offline:', err);
+                document.body.removeChild(elementoRelatorio);
+            });
+        }, 250);
     }
 
     function obterRegistros() {
