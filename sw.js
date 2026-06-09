@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coleta-campo-v5'; // Versão v5 para invalidar o cache antigo
+const CACHE_NAME = 'coleta-campo-v6'; // v6 limpa de vez as estruturas de tela do modal antigo
 const ASSETS = [
   './',
   './index.html'
