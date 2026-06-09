@@ -212,15 +212,16 @@
             background-color: var(--secondary-hover);
         }
 
+        /* Força a estilização vermelha do botão de exclusão ativa */
         .btn-delete {
-            background-color: var(--danger-color);
-            color: white;
-            border: none;
-            cursor: pointer;
+            background-color: var(--danger-color) !important;
+            color: white !important;
+            border: none !important;
+            cursor: pointer !important;
         }
 
         .btn-delete:hover {
-            background-color: var(--danger-hover);
+            background-color: var(--danger-hover) !important;
         }
     </style>
 </head>
@@ -798,7 +799,7 @@
         document.body.removeChild(link);
     }
 
-    // Geração de PDF Visual com abertura em NOVA ABA (Para visualização e controle de impressão do próprio operador)
+    // Geração de PDF Visual com abertura em NOVA ABA (Apenas abre a página, sem forçar tela de impressão)
     function exportarPDF() {
         const dataFiltro = document.getElementById('filtro_data_pdf').value;
         if (!dataFiltro) {
@@ -985,6 +986,8 @@
         </html>
         `;
 
+        // O PDF agora apenas ABRE na nova janela. 
+        // A janela de impressão nativa só abrirá quando/se o usuário clicar no botão azul "Salvar como PDF ou Imprimir".
         doc.write(htmlPrint);
         doc.close();
     }
