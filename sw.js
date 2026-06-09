@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coleta-campo-v3'; // Mudança da versão força a atualização nos celulares
+const CACHE_NAME = 'coleta-campo-v4'; // Versão v4 força a atualização
 const ASSETS = [
   './',
   './index.html'
@@ -14,7 +14,7 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// Ativação e limpeza de caches antigos
+// Ativação e limpeza de caches antigos (Remove a versão v3 e v2)
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
