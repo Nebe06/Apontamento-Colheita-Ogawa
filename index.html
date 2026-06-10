@@ -329,7 +329,8 @@
         </div>
 
         <div class="form-group">
-            <label for="cod_veiculo_destino">Veículo de Destino</label>
+            <!-- Validação dinâmica de obrigatoriedade será realizada no label e input -->
+            <label for="cod_veiculo_destino" id="label_veiculo_destino">Veículo de Destino</label>
             <input type="text" id="cod_veiculo_destino" required placeholder="Ex: 10" inputmode="numeric" pattern="[0-9]+">
         </div>
 
@@ -471,23 +472,37 @@
         const inputMaquinaColetada = document.getElementById('maquina_coletada');
         const grupoHectares = document.getElementById('grupo_hectares');
         const inputHectares = document.getElementById('hectares');
+        const inputVeiculo = document.getElementById('cod_veiculo_destino');
+        const labelVeiculo = document.getElementById('label_veiculo_destino');
 
         radiosMinhaMaquina.forEach(radio => {
             radio.addEventListener('change', () => {
                 if (radio.value === 'Bazuca') {
+                    // Exibe Máquina Coletada (Obrigatória)
                     grupoMaquinaColetada.classList.remove('hidden');
                     inputMaquinaColetada.required = true;
                     
+                    // Oculta Hectares (Não Obrigatória)
                     grupoHectares.classList.add('hidden');
                     inputHectares.required = false;
                     inputHectares.value = '';
+
+                    // Veículo de Destino: Fica opcional para Bazuca
+                    inputVeiculo.required = false;
+                    labelVeiculo.innerText = "Veículo de Destino (Opcional)";
                 } else {
+                    // Oculta Máquina Coletada (Não Obrigatória)
                     grupoMaquinaColetada.classList.add('hidden');
                     inputMaquinaColetada.required = false;
                     inputMaquinaColetada.value = '';
                     
+                    // Exibe Hectares (Obrigatória)
                     grupoHectares.classList.remove('hidden');
                     inputHectares.required = true;
+
+                    // Veículo de Destino: Volta a ser obrigatório para Colheitadeira
+                    inputVeiculo.required = true;
+                    labelVeiculo.innerText = "Veículo de Destino";
                 }
             });
         });
@@ -595,15 +610,22 @@
             }
         }
 
-        if (!dados.veiculo) {
-            alert("Erro: O campo 'Veículo de Destino' é obrigatório.");
-            document.getElementById('cod_veiculo_destino').focus();
-            return false;
+        // Valida Veículo de Destino: Obrigatório se for Colheitadeira. Se for Bazuca, é opcional.
+        if (minhaMaquinaVal === 'Colheitadeira') {
+            if (!dados.veiculo) {
+                alert("Erro: Para 'Colheitadeira', o campo 'Veículo de Destino' é obrigatório.");
+                document.getElementById('cod_veiculo_destino').focus();
+                return false;
+            }
         }
-        if (parseInt(dados.veiculo, 10) === 0) {
-            alert("Erro: O campo 'Veículo de Destino' não pode ser igual a zero.");
-            document.getElementById('cod_veiculo_destino').focus();
-            return false;
+
+        // Se o veículo estiver preenchido (seja Bazuca ou Colheitadeira), valida as restrições numéricas
+        if (dados.veiculo) {
+            if (parseInt(dados.veiculo, 10) === 0) {
+                alert("Erro: O campo 'Veículo de Destino' não pode ser igual a zero.");
+                document.getElementById('cod_veiculo_destino').focus();
+                return false;
+            }
         }
 
         return true;
@@ -773,6 +795,7 @@
         filtrados.forEach(r => {
             const maqColetada = r.maquina_coletada || "-";
             const valorHec = r.hectares !== null ? r.hectares.toString().replace('.', ',') : "-";
+            const veiculoDest = r.cod_veiculo_destino || "-";
             
             const linha = [
                 r.id,
@@ -785,17 +808,16 @@
                 r.talhao.replace(/;/g, ','),
                 r.volume_carga,
                 valorHec,
-                r.cod_veiculo_destino.replace(/;/g, ','),
+                veiculoDest.replace(/;/g, ','),
                 r.timestamp_criacao
             ];
             csvContent += linha.join(';') + '\r\n';
         });
 
-        // Configuração do Nome do Arquivo Customizado
         const operadorInput = document.getElementById('nome_operador').value.trim();
         const operadorLimpo = operadorInput ? operadorInput.replace(/\s+/g, '_') : 'OPERADOR';
         const dataFiltroLimpa = dataFiltro.split('-').reverse().join('_');
-        const nomeArquivoFinal = `${operadorLimpo}_${dataFiltroLimpa}.csv`; // RESOLVIDO: Sem erros de digitação
+        const nomeArquivoFinal = `${operadorLimpo}_${dataFiltroLimpa}.csv`;
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -823,7 +845,6 @@
             return;
         }
 
-        // Ordenar por hora crescente
         filtrados.sort((a, b) => new Date(a.data.replace(' ', 'T')) - new Date(b.data.replace(' ', 'T')));
 
         const dataFormatadaPt = dataFiltro.split('-').reverse().join('/');
@@ -831,10 +852,10 @@
         // Nome do arquivo PDF: [Nome_do_Operador]_[Data_Selecionada_no_Filtro].pdf
         const operadorInput = document.getElementById('nome_operador').value.trim();
         const operadorRegistro = filtrados[0] ? filtrados[0].nome_operador : 'OPERADOR';
-        const operadorFinal = operadorInput || operadorRegistro; // Garante o nome correto
+        const operadorFinal = operadorInput || operadorRegistro; 
         const operadorLimpo = operadorFinal.replace(/\s+/g, '_');
         const dataFiltroLimpa = dataFiltro.split('-').reverse().join('_');
-        const nomeArquivoFinal = `${operadorLimpo}_${dataFiltroLimpa}.pdf`; // RESOLVIDO: Sem erros de digitação
+        const nomeArquivoFinal = `${operadorLimpo}_${dataFiltroLimpa}.pdf`;
 
         // Inicialização do documento jsPDF em modo paisagem (Landscape)
         const { jsPDF } = window.jspdf;
@@ -856,6 +877,7 @@
         filtrados.forEach(r => {
             const maqColetada = r.maquina_coletada || "-";
             const hecExibir = r.hectares !== null ? r.hectares.toString().replace('.', ',') : "-";
+            const veiculoDest = r.cod_veiculo_destino || "-";
             const dataRelatorioExibivel = formatarDataHoraParaExibicao(r.data);
             
             linhas.push([
@@ -868,7 +890,7 @@
                 r.talhao,
                 r.volume_carga,
                 hecExibir,
-                r.cod_veiculo_destino
+                veiculoDest
             ]);
         });
 
@@ -949,7 +971,7 @@
             document.getElementById('cod_veiculo_destino').value = '';
             document.getElementById('maquina_coletada').value = '';
             
-            const checkedMaquina = document.querySelector('input[name="minha_maquina"][value="${ultimo.minha_maquina}"]');
+            const checkedMaquina = document.querySelector('input[name="minha_maquina"]:checked');
             if (checkedMaquina) checkedMaquina.checked = false;
             
             const checkedVolume = document.querySelector('input[name="volume_carga"]:checked');
@@ -977,13 +999,14 @@
             const infoMaquinaColetada = r.minha_maquina === 'Bazuca' ? ` | <strong>Coletada:</strong> ${r.maquina_coletada}` : '';
             const exibirHectares = r.minha_maquina === 'Colheitadeira' ? ` | <strong>Hectares:</strong> ${r.hectares}` : '';
             const dataFormatada = formatarDataHoraParaExibicao(r.data);
+            const veiculoExibir = r.cod_veiculo_destino || "-";
 
             card.innerHTML = `
                 <div class="record-details">
                     <strong>Data/Hora:</strong> ${dataFormatada}<br>
                     <strong>Operador:</strong> ${r.nome_operador} | <strong>Fazenda:</strong> ${r.fazenda} | <strong>Talhão:</strong> ${r.talhao}<br>
                     <strong>Máquina:</strong> ${r.minha_maquina}${infoMaquinaColetada}${exibirHectares}<br>
-                    <strong>Volume Carga:</strong> ${r.volume_carga} | <strong>Veículo:</strong> ${r.cod_veiculo_destino}<br>
+                    <strong>Volume Carga:</strong> ${r.volume_carga} | <strong>Veículo:</strong> ${veiculoExibir}<br>
                 </div>
                 <div class="card-actions">
                     <button class="btn-card-edit" onclick="carregarParaEdicao(${r.id})">Editar</button>
