@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coleta-campo-v10'; // v10 força a atualização das novas dependências de PDF
+const CACHE_NAME = 'coleta-campo-v11'; // v11 para limpar regras de obrigatoriedade antigas do veículo
 const ASSETS = [
   './',
   './index.html',
