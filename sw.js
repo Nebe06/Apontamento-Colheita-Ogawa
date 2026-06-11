@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coleta-campo-v11'; // v11 para limpar regras de obrigatoriedade antigas do veículo
+const CACHE_NAME = 'coleta-campo-v12'; // Versão v12 força a limpeza das rotinas de gravação de objeto antigas
 const ASSETS = [
   './',
   './index.html',
