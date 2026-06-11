@@ -64,6 +64,15 @@
             font-size: 14px;
         }
 
+        /* Estilização para as mensagens de erro vermelhas sobre os campos */
+        .error-msg {
+            color: var(--danger-color);
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            display: none; /* Escondidas por padrão */
+        }
+
         input[type="text"],
         input[type="date"],
         input[type="number"] {
@@ -236,16 +245,19 @@
         <!-- Campos Fixos que NÃO são limpos ao salvar -->
         <div class="form-group">
             <label for="nome_operador">Nome do Operador</label>
+            <div class="error-msg" id="erro_nome_operador"></div>
             <input type="text" id="nome_operador" required placeholder="EX: JOAO SILVA" pattern="[A-Z\s]+" title="Apenas letras maiúsculas, sem acentos ou caracteres especiais.">
         </div>
 
         <div class="form-group">
             <label for="cod_maquina">Código da Minha Máquina</label>
+            <div class="error-msg" id="erro_cod_maquina"></div>
             <input type="text" id="cod_maquina" required placeholder="Ex: 4" inputmode="numeric" pattern="[0-9]+">
         </div>
 
         <div class="form-group">
             <label>Minha Máquina</label>
+            <div class="error-msg" id="erro_minha_maquina"></div>
             <div class="radio-group">
                 <div class="radio-option">
                     <input type="radio" id="maq_colheitadeira" name="minha_maquina" value="Colheitadeira" required>
@@ -261,18 +273,21 @@
         <!-- Campo Condicional Máquina Coletada -->
         <div class="form-group hidden" id="grupo_maquina_coletada">
             <label for="maquina_coletada">Máquina Coletada</label>
+            <div class="error-msg" id="erro_maquina_coletada"></div>
             <input type="text" id="maquina_coletada" placeholder="Ex: 326" inputmode="numeric" pattern="[0-9]+">
         </div>
 
         <!-- Campos que SÃO limpos ao salvar -->
         <div class="form-group">
             <label for="data">Data da Operação</label>
+            <div class="error-msg" id="erro_data"></div>
             <input type="date" id="data" required>
         </div>
 
         <!-- Campo Fazenda com Autocompletar -->
         <div class="form-group">
             <label for="fazenda">Fazenda</label>
+            <div class="error-msg" id="erro_fazenda"></div>
             <input type="text" id="fazenda" list="lista_fazendas" required placeholder="Digite ou selecione a fazenda">
             
             <datalist id="lista_fazendas">
@@ -297,11 +312,13 @@
 
         <div class="form-group">
             <label for="talhao">Talhão</label>
+            <div class="error-msg" id="erro_talhao"></div>
             <input type="text" id="talhao" required placeholder="Ex: 12" inputmode="numeric" pattern="[0-9]+">
         </div>
 
         <div class="form-group">
             <label>Volume da Carga</label>
+            <div class="error-msg" id="erro_volume_carga"></div>
             <div class="radio-group-servicos">
                 <div class="radio-option">
                     <input type="radio" id="vol_1" name="volume_carga" value="1/4" required>
@@ -325,12 +342,13 @@
         <!-- Campo Hectares (Condicional - Oculto se for Bazuca) -->
         <div class="form-group" id="grupo_hectares">
             <label for="hectares">Hectares Colhidos</label>
+            <div class="error-msg" id="erro_hectares"></div>
             <input type="number" id="hectares" step="0.01" required placeholder="Ex: 1,25">
         </div>
 
         <div class="form-group">
-            <!-- Validação dinâmica de obrigatoriedade será realizada no label e input -->
             <label for="cod_veiculo_destino" id="label_veiculo_destino">Veículo de Destino</label>
+            <div class="error-msg" id="erro_cod_veiculo_destino"></div>
             <input type="text" id="cod_veiculo_destino" required placeholder="Ex: 10" inputmode="numeric" pattern="[0-9]+">
         </div>
 
@@ -394,7 +412,6 @@
         const inputTalhao = document.getElementById('talhao');
         const inputVeiculo = document.getElementById('cod_veiculo_destino');
 
-        // Nome do operador: Somente letras maiúsculas e espaços
         inputNome.addEventListener('input', function() {
             let valor = this.value.toUpperCase();
             valor = valor.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -402,27 +419,22 @@
             this.value = valor;
         });
 
-        // Código da máquina: Somente inteiros
         inputCodMaquina.addEventListener('input', function() {
             this.value = this.value.replace(/\D/g, '');
         });
 
-        // Máquina coletada: Somente inteiros
         inputMaquinaColetada.addEventListener('input', function() {
             this.value = this.value.replace(/\D/g, '');
         });
 
-        // Fazenda: Força letras maiúsculas durante a digitação
         inputFazenda.addEventListener('input', function() {
             this.value = this.value.toUpperCase();
         });
 
-        // Talhão: Somente inteiros
         inputTalhao.addEventListener('input', function() {
             this.value = this.value.replace(/\D/g, '');
         });
 
-        // Veículo de destino: Somente inteiros
         inputVeiculo.addEventListener('input', function() {
             this.value = this.value.replace(/\D/g, '');
         });
@@ -478,29 +490,23 @@
         radiosMinhaMaquina.forEach(radio => {
             radio.addEventListener('change', () => {
                 if (radio.value === 'Bazuca') {
-                    // Exibe Máquina Coletada (Obrigatória)
                     grupoMaquinaColetada.classList.remove('hidden');
                     inputMaquinaColetada.required = true;
                     
-                    // Oculta Hectares (Não Obrigatória)
                     grupoHectares.classList.add('hidden');
                     inputHectares.required = false;
                     inputHectares.value = '';
 
-                    // Veículo de Destino: Fica opcional para Bazuca
                     inputVeiculo.required = false;
                     labelVeiculo.innerText = "Veículo de Destino (Opcional)";
                 } else {
-                    // Oculta Máquina Coletada (Não Obrigatória)
                     grupoMaquinaColetada.classList.add('hidden');
                     inputMaquinaColetada.required = false;
                     inputMaquinaColetada.value = '';
                     
-                    // Exibe Hectares (Obrigatória)
                     grupoHectares.classList.remove('hidden');
                     inputHectares.required = true;
 
-                    // Veículo de Destino: Volta a ser obrigatório para Colheitadeira
                     inputVeiculo.required = true;
                     labelVeiculo.innerText = "Veículo de Destino";
                 }
@@ -508,121 +514,135 @@
         });
     }
 
-    // Validação Manual Detalhada de Erros para Exibição dos Alertas
+    // Funções de Gerenciamento das Mensagens de Erro Vermelhas acima dos campos
+    function mostrarErro(idCampo, mensagem) {
+        const erroEl = document.getElementById('erro_' + idCampo);
+        if (erroEl) {
+            erroEl.innerText = mensagem;
+            erroEl.style.display = 'block';
+        }
+    }
+
+    function limparErros() {
+        const erros = document.querySelectorAll('.error-msg');
+        erros.forEach(el => {
+            el.style.display = 'none';
+            el.innerText = '';
+        });
+    }
+
+    // Validação Manual Detalhada com redirecionamento de erros para spans acima dos campos
     function validarFormulario(dados) {
+        limparErros(); // Reseta os avisos anteriores antes de iniciar
+
         if (!dados.operador) {
-            alert("Erro: O campo 'Nome do Operador' é obrigatório.");
+            mostrarErro('nome_operador', "O campo 'Nome do Operador' é obrigatório.");
             document.getElementById('nome_operador').focus();
             return false;
         }
         if (!/^[A-Z\s]+$/.test(dados.operador)) {
-            alert("Erro: O 'Nome do Operador' deve conter apenas letras maiúsculas, sem caracteres especiais ou acentos.");
+            mostrarErro('nome_operador', "O 'Nome do Operador' deve conter apenas letras maiúsculas, sem caracteres especiais ou acentos.");
             document.getElementById('nome_operador').focus();
             return false;
         }
 
         if (!dados.codMaquina) {
-            alert("Erro: O campo 'Código da Minha Máquina' é obrigatório.");
+            mostrarErro('cod_maquina', "O campo 'Código da Minha Máquina' é obrigatório.");
             document.getElementById('cod_maquina').focus();
             return false;
         }
         if (parseInt(dados.codMaquina, 10) === 0) {
-            alert("Erro: O 'Código da Minha Máquina' não pode ser igual a zero.");
+            mostrarErro('cod_maquina', "O 'Código da Minha Máquina' não pode ser igual a zero.");
             document.getElementById('cod_maquina').focus();
             return false;
         }
 
         if (!dados.minhaMaquinaRadio) {
-            alert("Erro: Selecione uma opção em 'Minha Máquina' (Colheitadeira ou Bazuca).");
+            mostrarErro('minha_maquina', "Selecione uma opção em 'Minha Máquina' (Colheitadeira ou Bazuca).");
             return false;
         }
 
         const minhaMaquinaVal = dados.minhaMaquinaRadio.value;
 
-        // Valida Máquina Coletada apenas se o campo estiver visível (Bazuca)
         if (minhaMaquinaVal === 'Bazuca') {
             if (!dados.maqColetada) {
-                alert("Erro: Para 'Bazuca', o campo 'Máquina Coletada' é obrigatório.");
+                mostrarErro('maquina_coletada', "Para 'Bazuca', o campo 'Máquina Coletada' é obrigatório.");
                 document.getElementById('maquina_coletada').focus();
                 return false;
             }
             if (parseInt(dados.maqColetada, 10) === 0) {
-                alert("Erro: O campo 'Máquina Coletada' não pode ser igual a zero.");
+                mostrarErro('maquina_coletada', "O campo 'Máquina Coletada' não pode ser igual a zero.");
                 document.getElementById('maquina_coletada').focus();
                 return false;
             }
         }
 
         if (!dados.dataSelecionada) {
-            alert("Erro: O campo 'Data da Operação' é obrigatório.");
+            mostrarErro('data', "O campo 'Data da Operação' é obrigatório.");
             document.getElementById('data').focus();
             return false;
         }
 
-        // Regra de Validação Temporal para Novos Registros
         if (idRegistroEmEdicao === null) {
             const hoje = obterDataLocalHoje();
             if (dados.dataSelecionada !== hoje) {
-                alert(`Erro: Novos registros só podem ser criados com a data de hoje (${hoje.split('-').reverse().join('/')}).`);
+                mostrarErro('data', `Novos registros só podem ser criados com a data de hoje (${hoje.split('-').reverse().join('/')}).`);
                 document.getElementById('data').focus();
                 return false;
             }
         }
 
         if (!dados.fazendaValor) {
-            alert("Erro: O campo 'Fazenda' é obrigatório.");
+            mostrarErro('fazenda', "O campo 'Fazenda' é obrigatório.");
             document.getElementById('fazenda').focus();
             return false;
         }
         if (!FAZENDAS_PERMITIDAS.includes(dados.fazendaValor)) {
-            alert(`Erro: A fazenda '${dados.fazendaOriginal}' é inválida! Selecione uma opção válida da lista (Ex: BRASIL, BELA VISTA, JULICE, etc.).`);
+            mostrarErro('fazenda', `A fazenda '${dados.fazendaOriginal}' é inválida! Escolha uma fazenda da lista de opções sugeridas.`);
             document.getElementById('fazenda').focus();
             return false;
         }
 
         if (!dados.talhao) {
-            alert("Erro: O campo 'Talhão' é obrigatório.");
+            mostrarErro('talhao', "O campo 'Talhão' é obrigatório.");
             document.getElementById('talhao').focus();
             return false;
         }
         if (parseInt(dados.talhao, 10) === 0) {
-            alert("Erro: O campo 'Talhão' não pode ser igual a zero.");
+            mostrarErro('talhao', "O campo 'Talhão' não pode ser igual a zero.");
             document.getElementById('talhao').focus();
             return false;
         }
 
         if (!dados.volumeCargaRadio) {
-            alert("Erro: Selecione uma opção em 'Volume da Carga'.");
+            mostrarErro('volume_carga', "Selecione uma opção em 'Volume da Carga'.");
             return false;
         }
 
-        // Valida Hectares apenas se o campo estiver visível (Colheitadeira)
         if (minhaMaquinaVal === 'Colheitadeira') {
             if (!dados.hectaresVal) {
-                alert("Erro: Para 'Colheitadeira', o campo 'Hectares Colhidos' é obrigatório.");
+                mostrarErro('hectares', "Para 'Colheitadeira', o campo 'Hectares Colhidos' é obrigatório.");
                 document.getElementById('hectares').focus();
                 return false;
             }
             if (isNaN(parseFloat(dados.hectaresVal)) || parseFloat(dados.hectaresVal) <= 0) {
-                alert("Erro: O campo 'Hectares Colhidos' deve conter um número decimal maior que zero (Ex: 1,25).");
+                mostrarErro('hectares', "O campo 'Hectares Colhidos' deve conter um número decimal maior que zero (Ex: 1,25).");
                 document.getElementById('hectares').focus();
                 return false;
             }
         }
 
-        // Valida Veículo de Destino: Obrigatório se for Colheitadeira. Se for Bazuca, é opcional.
         if (minhaMaquinaVal === 'Colheitadeira') {
             if (!dados.veiculo) {
-                alert("Erro: Para 'Colheitadeira', o campo 'Veículo de Destino' é obrigatório.");
+                mostrarErro('cod_veiculo_destino', "Para 'Colheitadeira', o campo 'Veículo de Destino' é obrigatório.");
                 document.getElementById('cod_veiculo_destino').focus();
                 return false;
             }
         }
 
-        // Se o veículo estiver preenchido (seja Bazuca ou Colheitadeira), valida as restrições numéricas
         if (dados.veiculo) {
             if (parseInt(dados.veiculo, 10) === 0) {
-                alert("Erro: O campo 'Veículo de Destino' não pode ser igual a zero.");
+                mostrarErro('cod_veiculo_destino', "O campo 'Veículo de Destino' não pode ser igual a zero.");
                 document.getElementById('cod_veiculo_destino').focus();
                 return false;
             }
@@ -631,7 +651,7 @@
         return true;
     }
 
-    // Salvar ou Atualizar Registro com Validação Estrita de Campos Obrigatórios e de Fazendas
+    // Salvar ou Atualizar Registro
     document.getElementById('registroForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
@@ -666,7 +686,7 @@
                 registros[index].minha_maquina = minhaMaquinaVal;
                 registros[index].maquina_coletada = dadosForm.maqColetada;
                 registros[index].fazenda = dadosForm.fazendaValor;
-                registros[index].talhao = talhao;
+                registros[index].talhao = dadosForm.talhao;
                 registros[index].volume_carga = dadosForm.volumeCargaRadio.value;
                 registros[index].hectares = valorHectares;
                 registros[index].cod_veiculo_destino = dadosForm.veiculo;
@@ -687,7 +707,7 @@
                 minha_maquina: minhaMaquinaVal,
                 maquina_coletada: dadosForm.maqColetada,
                 fazenda: dadosForm.fazendaValor,
-                talhao: dadosForm.talhao,
+                talhao: dadosForm.talhao, // CORRIGIDO: Vincula o dado limpo do formulário, eliminando o erro de [object Object]
                 volume_carga: dadosForm.volumeCargaRadio.value,
                 hectares: valorHectares,
                 cod_veiculo_destino: dadosForm.veiculo
@@ -696,10 +716,8 @@
             registros.push(dataRegistro);
             salvarRegistros(registros);
 
-            // Limpa apenas os campos variáveis
+            // Limpa apenas os campos estritamente variáveis (Fazenda e Talhão NÃO são limpos mais)
             document.getElementById('data').value = obterDataLocalHoje();
-            document.getElementById('fazenda').value = '';
-            document.getElementById('talhao').value = '';
             document.getElementById('hectares').value = '';
             document.getElementById('cod_veiculo_destino').value = '';
             
@@ -728,7 +746,6 @@
         btnSalvar.classList.add('modo-edicao');
         document.getElementById('btnCancelarEdicao').style.display = 'block';
 
-        // Desabilita alteração do campo de data durante edições antigas
         const inputData = document.getElementById('data');
         inputData.value = registro.data.substring(0, 10);
         inputData.disabled = true;
@@ -766,14 +783,12 @@
         btnSalvar.innerText = "Salvar Registro";
         btnSalvar.classList.remove('modo-edicao');
         document.getElementById('btnCancelarEdicao').style.display = 'none';
-
-        // Reativa o campo de data
         document.getElementById('data').disabled = false;
 
         carregarUltimoEstado();
     }
 
-    // Exportação Física para arquivo CSV no Celular (Sem disparar o WhatsApp)
+    // Exportação do CSV - FILTRADO por Data Selecionada
     function exportarCSV() {
         const dataFiltro = document.getElementById('filtro_data_pdf').value;
         if (!dataFiltro) {
@@ -829,7 +844,7 @@
         document.body.removeChild(link);
     }
 
-    // Geração de PDF VETORIAL DIRETO (Suporte de texto e colagem 100% preservados)
+    // Geração do PDF Vetorial com o jspdf e jspdf-autotable
     function exportarPDF() {
         const dataFiltro = document.getElementById('filtro_data_pdf').value;
         if (!dataFiltro) {
@@ -849,7 +864,7 @@
 
         const dataFormatadaPt = dataFiltro.split('-').reverse().join('/');
 
-        // Nome do arquivo PDF: [Nome_do_Operador]_[Data_Selecionada_no_Filtro].pdf
+        // Nome de exportação
         const operadorInput = document.getElementById('nome_operador').value.trim();
         const operadorRegistro = filtrados[0] ? filtrados[0].nome_operador : 'OPERADOR';
         const operadorFinal = operadorInput || operadorRegistro; 
@@ -857,11 +872,9 @@
         const dataFiltroLimpa = dataFiltro.split('-').reverse().join('_');
         const nomeArquivoFinal = `${operadorLimpo}_${dataFiltroLimpa}.pdf`;
 
-        // Inicialização do documento jsPDF em modo paisagem (Landscape)
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'landscape' });
 
-        // Título e Cabeçalho do PDF nativo
         doc.setFont("Helvetica", "bold");
         doc.setFontSize(16);
         doc.text("Relatório Diário de Operação de Campo", 14, 15);
@@ -870,7 +883,6 @@
         doc.setFontSize(10);
         doc.text(`Data de Referência: ${dataFormatadaPt} | Gerado em: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, 14, 22);
 
-        // Estrutura de colunas e dados para renderização da Tabela Vetorial (jspdf-autotable)
         const colunas = ["Data/Hora", "Operador", "Cód. Maq.", "Tipo Máquina", "Máq. Coletada", "Fazenda", "Talhão", "Vol. Carga", "Hectares", "Veículo Dest."];
         const linhas = [];
 
@@ -894,7 +906,6 @@
             ]);
         });
 
-        // Desenho automático da tabela
         doc.autoTable({
             startY: 28,
             head: [colunas],
@@ -904,26 +915,21 @@
             headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' }
         });
 
-        // Linhas de Assinatura Dinâmicas baseadas no fim da tabela
         const finalY = doc.lastAutoTable.finalY + 15;
         const larguraPagina = doc.internal.pageSize.getWidth();
         const yLinha = finalY + 15;
 
         doc.setFontSize(9);
         
-        // Coluna 1: Operador
         doc.line(14, yLinha, 80, yLinha);
         doc.text("Assinatura do Operador", 14 + 10, yLinha + 5);
 
-        // Coluna 2: Supervisor
         doc.line(larguraPagina/2 - 33, yLinha, larguraPagina/2 + 33, yLinha);
         doc.text("Assinatura do Supervisor", larguraPagina/2 - 20, yLinha + 5);
 
-        // Coluna 3: Auditor
         doc.line(larguraPagina - 80, yLinha, larguraPagina - 14, yLinha);
         doc.text("Assinatura do Auditor", larguraPagina - 70, yLinha + 5);
 
-        // Realiza o download físico direto do arquivo .PDF contendo apenas os dados de texto reais (vetoriais)
         doc.save(nomeArquivoFinal);
     }
 
@@ -941,7 +947,6 @@
         if (registros.length > 0) {
             const ultimo = registros[registros.length - 1];
             
-            // Preserva Nome, Código e Tipo da Máquina conforme a última gravação
             document.getElementById('nome_operador').value = ultimo.nome_operador;
             document.getElementById('cod_maquina').value = ultimo.cod_maquina;
             
@@ -951,10 +956,11 @@
                 radioMaquina.dispatchEvent(new Event('change'));
             }
 
-            // Força a limpeza dos demais campos de operação
+            // Garante que Fazenda e Talhão permaneçam preenchidos
+            document.getElementById('fazenda').value = ultimo.fazenda;
+            document.getElementById('talhao').value = ultimo.talhao;
+
             document.getElementById('data').value = obterDataLocalHoje();
-            document.getElementById('fazenda').value = '';
-            document.getElementById('talhao').value = '';
             document.getElementById('hectares').value = '';
             document.getElementById('cod_veiculo_destino').value = '';
             document.getElementById('maquina_coletada').value = '';
@@ -1024,7 +1030,6 @@
         return diffTempo / (1000 * 60 * 60 * 24);
     }
 
-    // Exclusão direta imediata de itens a partir de confirmação visual do operador
     window.excluirRegistro = function(id) {
         if (confirm('Tem certeza que deseja apagar permanentemente este registro do histórico local?')) {
             let registros = obterRegistros();
