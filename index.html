@@ -64,17 +64,17 @@
             font-size: 14px;
         }
 
-        /* Estilização para as mensagens de erro vermelhas sobre os campos */
         .error-msg {
             color: var(--danger-color);
             font-size: 12px;
             font-weight: bold;
             margin-bottom: 6px;
-            display: none; /* Escondidas por padrão */
+            display: none;
         }
 
         input[type="text"],
         input[type="date"],
+        input[type="datetime-local"],
         input[type="number"] {
             width: 100%;
             padding: 10px;
@@ -239,14 +239,14 @@
 <body>
 
 <div class="container" id="conteudoApp">
-    <h2 id="tituloFormulario">Coleta de Campo</h2>
+    <h2>Coleta de Campo</h2>
     
     <form id="registroForm" novalidate>
         <!-- Campos Fixos que NÃO são limpos ao salvar -->
         <div class="form-group">
             <label for="nome_operador">Nome do Operador</label>
             <div class="error-msg" id="erro_nome_operador"></div>
-            <input type="text" id="nome_operador" required placeholder="Digite seu nome completo" pattern="[A-Z\s]+" title="Apenas letras maiúsculas, sem acentos ou caracteres especiais.">
+            <input type="text" id="nome_operador" required placeholder="EX: JOAO SILVA" pattern="[A-Z\s]+" title="Apenas letras maiúsculas, sem acentos ou caracteres especiais.">
         </div>
 
         <div class="form-group">
@@ -277,14 +277,13 @@
             <input type="text" id="maquina_coletada" placeholder="Ex: 326" inputmode="numeric" pattern="[0-9]+">
         </div>
 
-        <!-- Campos que SÃO limpos ao salvar -->
+        <!-- Campos de Operação que NÃO são limpos ao salvar (Adicionada a Variedade) -->
         <div class="form-group">
             <label for="data">Data da Operação</label>
             <div class="error-msg" id="erro_data"></div>
             <input type="date" id="data" required>
         </div>
 
-        <!-- Campo Fazenda com Autocompletar -->
         <div class="form-group">
             <label for="fazenda">Fazenda</label>
             <div class="error-msg" id="erro_fazenda"></div>
@@ -311,11 +310,18 @@
         </div>
 
         <div class="form-group">
+            <label for="variedade">Variedade</label>
+            <div class="error-msg" id="erro_variedade"></div>
+            <input type="text" id="variedade" required placeholder="Ex: RB867515">
+        </div>
+
+        <div class="form-group">
             <label for="talhao">Talhão</label>
             <div class="error-msg" id="erro_talhao"></div>
             <input type="text" id="talhao" required placeholder="Ex: 12" inputmode="numeric" pattern="[0-9]+">
         </div>
 
+        <!-- Campos de Volume e Hectares que SÃO limpos ao salvar -->
         <div class="form-group">
             <label>Volume da Carga</label>
             <div class="error-msg" id="erro_volume_carga"></div>
@@ -339,7 +345,6 @@
             </div>
         </div>
 
-        <!-- Campo Hectares (Condicional - Oculto se for Bazuca) -->
         <div class="form-group" id="grupo_hectares">
             <label for="hectares">Hectares Colhidos</label>
             <div class="error-msg" id="erro_hectares"></div>
@@ -356,14 +361,18 @@
         <button type="button" class="btn-cancel" id="btnCancelarEdicao">Cancelar Edição</button>
     </form>
 
-    <!-- Sessão de Exportação -->
+    <!-- Sessão de Exportação e Controle de Turnos (Desbloqueado para edição do operador) -->
     <div class="section-divider">
         <div class="form-group">
-            <label for="filtro_data_pdf">Selecionar Data para Exportações</label>
-            <input type="date" id="filtro_data_pdf">
+            <label>Início do Turno de Exportação</label>
+            <input type="datetime-local" id="filtro_data_inicio">
         </div>
-        <button type="button" class="btn-export" id="btnExportarCSV" style="background-color: #27ae60;">Exportar CSV da Data Selecionada</button>
-        <button type="button" class="btn-export" id="btnExportarPDF">Exportar PDF da Data Selecionada</button>
+        <div class="form-group">
+            <label>Fim do Turno de Exportação</label>
+            <input type="datetime-local" id="filtro_data_fim">
+        </div>
+        <button type="button" class="btn-export" id="btnExportarCSV" style="background-color: #27ae60;">Exportar CSV do Turno Selecionado</button>
+        <button type="button" class="btn-export" id="btnExportarPDF">Exportar PDF do Turno Selecionado</button>
     </div>
 
     <div class="history-section">
@@ -396,11 +405,14 @@
         carregarUltimoEstado();
         renderizarHistorico();
         
+        // Define o intervalo sugerido apenas no carregamento inicial para não sobrescrever a digitação do operador posteriormente
+        if (!document.getElementById('filtro_data_inicio').value) {
+            atualizarFiltrosTurno();
+        }
+        
         document.getElementById('btnCancelarEdicao').addEventListener('click', cancelarEdicao);
         document.getElementById('btnExportarPDF').addEventListener('click', exportarPDF);
         document.getElementById('btnExportarCSV').addEventListener('click', exportarCSV);
-        
-        document.getElementById('filtro_data_pdf').value = new Date().toISOString().substring(0, 10);
     });
 
     // Sanitização e validação em tempo real dos inputs
@@ -409,6 +421,7 @@
         const inputCodMaquina = document.getElementById('cod_maquina');
         const inputMaquinaColetada = document.getElementById('maquina_coletada');
         const inputFazenda = document.getElementById('fazenda');
+        const inputVariedade = document.getElementById('variedade');
         const inputTalhao = document.getElementById('talhao');
         const inputVeiculo = document.getElementById('cod_veiculo_destino');
 
@@ -431,6 +444,10 @@
             this.value = this.value.toUpperCase();
         });
 
+        inputVariedade.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+
         inputTalhao.addEventListener('input', function() {
             this.value = this.value.replace(/\D/g, '');
         });
@@ -440,7 +457,50 @@
         });
     }
 
-    // Retorna a data de hoje formatada em YYYY-MM-DD local do celular
+    // Calcula os horários de início e fim dos turnos de forma automatizada e inicial
+    function calcularIntervaloTurnoAtual() {
+        const agora = new Date();
+        const hoje = new Date(agora);
+        const ontem = new Date(agora);
+        ontem.setDate(ontem.getDate() - 1);
+        const amanha = new Date(agora);
+        amanha.setDate(amanha.setDate() + 1);
+
+        let dataInicio, dataFim;
+        const hora = agora.getHours();
+
+        if (hora >= 7 && hora < 19) {
+            // Turno Dia
+            dataInicio = formatarParaInputDateTime(hoje, "07:00");
+            dataFim = formatarParaInputDateTime(hoje, "19:00");
+        } else {
+            // Turno Noite
+            if (hora >= 19) {
+                // Noite - Antes da Meia Noite
+                dataInicio = formatarParaInputDateTime(hoje, "19:00");
+                dataFim = formatarParaInputDateTime(amanha, "07:00");
+            } else {
+                // Noite - Depois da Meia Noite
+                dataInicio = formatarParaInputDateTime(ontem, "19:00");
+                dataFim = formatarParaInputDateTime(hoje, "07:00");
+            }
+        }
+        return { inicio: dataInicio, fim: dataFim };
+    }
+
+    function formatarParaInputDateTime(data, horaMinuto) {
+        const ano = data.getFullYear();
+        const mes = String(data.getMonth() + 1).padStart(2, '0');
+        const dia = String(d = data.getDate()).padStart(2, '0');
+        return `${ano}-${mes}-${dia}T${horaMinuto}`;
+    }
+
+    function atualizarFiltrosTurno() {
+        const turno = calcularIntervaloTurnoAtual();
+        document.getElementById('filtro_data_inicio').value = turno.inicio;
+        document.getElementById('filtro_data_fim').value = turno.fim;
+    }
+
     function obterDataLocalHoje() {
         const d = new Date();
         const dia = String(d.getDate()).padStart(2, '0');
@@ -457,7 +517,6 @@
         return `${horas}:${minutos}:${segundos}`;
     }
 
-    // Função de formatação para exibir data no formato dd/mm/aa + hora
     function formatarDataHoraParaExibicao(dataOriginal) {
         if (!dataOriginal || dataOriginal.length < 10) return dataOriginal;
         
@@ -477,7 +536,6 @@
         return parteHora ? `${dataFormatada} ${parteHora}` : dataFormatada;
     }
 
-    // Configuração dos eventos de exibição dinâmica de campos e alteração de obrigatoriedade
     function configurarEventosCondicionais() {
         const radiosMinhaMaquina = document.getElementsByName('minha_maquina');
         const grupoMaquinaColetada = document.getElementById('grupo_maquina_coletada');
@@ -514,11 +572,10 @@
         });
     }
 
-    // Funções de Gerenciamento das Mensagens de Erro Vermelhas acima dos campos
-    function mostrarErro(idCampo, mensagem) {
+    function mostrarErro(idCampo, message) {
         const erroEl = document.getElementById('erro_' + idCampo);
         if (erroEl) {
-            erroEl.innerText = mensagem;
+            erroEl.innerText = message;
             erroEl.style.display = 'block';
         }
     }
@@ -531,9 +588,8 @@
         });
     }
 
-    // Validação Manual Detalhada com redirecionamento de erros para spans acima dos campos
     function validarFormulario(dados) {
-        limparErros(); // Reseta os avisos anteriores antes de iniciar
+        limparErros();
 
         if (!dados.operador) {
             mostrarErro('nome_operador', "O campo 'Nome do Operador' é obrigatório.");
@@ -603,6 +659,12 @@
             return false;
         }
 
+        if (!dados.variedade) {
+            mostrarErro('variedade', "O campo 'Variedade' é obrigatório.");
+            document.getElementById('variedade').focus();
+            return false;
+        }
+
         if (!dados.talhao) {
             mostrarErro('talhao', "O campo 'Talhão' é obrigatório.");
             document.getElementById('talhao').focus();
@@ -651,7 +713,6 @@
         return true;
     }
 
-    // Salvar ou Atualizar Registro
     document.getElementById('registroForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
@@ -663,6 +724,7 @@
             dataSelecionada: document.getElementById('data').value.trim(),
             fazendaOriginal: document.getElementById('fazenda').value, 
             fazendaValor: document.getElementById('fazenda').value.toUpperCase().trim(),
+            variedade: document.getElementById('variedade').value.toUpperCase().trim(),
             talhao: document.getElementById('talhao').value.trim(),
             volumeCargaRadio: document.querySelector('input[name="volume_carga"]:checked'),
             hectaresVal: document.getElementById('hectares').value.trim(),
@@ -686,6 +748,7 @@
                 registros[index].minha_maquina = minhaMaquinaVal;
                 registros[index].maquina_coletada = dadosForm.maqColetada;
                 registros[index].fazenda = dadosForm.fazendaValor;
+                registros[index].variedade = dadosForm.variedade;
                 registros[index].talhao = dadosForm.talhao;
                 registros[index].volume_carga = dadosForm.volumeCargaRadio.value;
                 registros[index].hectares = valorHectares;
@@ -707,7 +770,8 @@
                 minha_maquina: minhaMaquinaVal,
                 maquina_coletada: dadosForm.maqColetada,
                 fazenda: dadosForm.fazendaValor,
-                talhao: dadosForm.talhao, // CORRIGIDO: Vincula o dado limpo do formulário, eliminando o erro de [object Object]
+                variedade: dadosForm.variedade,
+                talhao: dadosForm.talhao,
                 volume_carga: dadosForm.volumeCargaRadio.value,
                 hectares: valorHectares,
                 cod_veiculo_destino: dadosForm.veiculo
@@ -716,7 +780,7 @@
             registros.push(dataRegistro);
             salvarRegistros(registros);
 
-            // Limpa apenas os campos estritamente variáveis (Fazenda e Talhão NÃO são limpos mais)
+            // Limpeza seletiva: Variedade, Fazenda e Talhão permanecem guardados
             document.getElementById('data').value = obterDataLocalHoje();
             document.getElementById('hectares').value = '';
             document.getElementById('cod_veiculo_destino').value = '';
@@ -753,6 +817,7 @@
         document.getElementById('nome_operador').value = registro.nome_operador;
         document.getElementById('cod_maquina').value = registro.cod_maquina;
         document.getElementById('fazenda').value = registro.fazenda;
+        document.getElementById('variedade').value = registro.variedade || '';
         document.getElementById('talhao').value = registro.talhao;
         document.getElementById('cod_veiculo_destino').value = registro.cod_veiculo_destino;
 
@@ -788,29 +853,41 @@
         carregarUltimoEstado();
     }
 
-    // Exportação do CSV - FILTRADO por Data Selecionada
-    function exportarCSV() {
-        const dataFiltro = document.getElementById('filtro_data_pdf').value;
-        if (!dataFiltro) {
-            alert('Por favor, selecione uma data no filtro para exportar o CSV.');
-            return;
-        }
-
+    // Retorna apenas registros criados dentro da faixa de turnos do filtro (Início/Fim)
+    function obterRegistrosFiltradosPorTurno() {
         const registros = obterRegistros();
-        const filtrados = registros.filter(r => r.data.startsWith(dataFiltro));
+        const inputInicio = document.getElementById('filtro_data_inicio').value;
+        const inputFim = document.getElementById('filtro_data_fim').value;
+
+        if (!inputInicio || !inputFim) return [];
+
+        const timeInicio = new Date(inputInicio).getTime();
+        const timeFim = new Date(inputFim).getTime();
+
+        return registros.filter(r => {
+            const dataIso = r.data.replace(' ', 'T');
+            const timeRegistro = new Date(dataIso).getTime();
+            return timeRegistro >= timeInicio && timeRegistro <= timeFim;
+        });
+    }
+
+    // Exportação do CSV - Filtrado estritamente por Intervalo de Turnos
+    function exportarCSV() {
+        const filtrados = obterRegistrosFiltradosPorTurno();
 
         if (filtrados.length === 0) {
-            alert('Nenhum registro encontrado localmente para a data selecionada no filtro.');
+            alert('Nenhum registro localizado para o turno ativo selecionado.');
             return;
         }
 
         let csvContent = '\uFEFF'; 
-        csvContent += 'ID;Data Operacao;Operador;Cod Maquina;Tipo Maquina;Maquina Coletada;Fazenda;Talhao;Volume Carga;Hectares;Veiculo Destino;Criado Em\r\n';
+        csvContent += 'ID;Data Operacao;Operador;Cod Maquina;Tipo Maquina;Maquina Coletada;Fazenda;Variedade;Talhao;Volume Carga;Hectares;Veiculo Destino;Criado Em\r\n';
 
         filtrados.forEach(r => {
             const maqColetada = r.maquina_coletada || "-";
             const valorHec = r.hectares !== null ? r.hectares.toString().replace('.', ',') : "-";
             const veiculoDest = r.cod_veiculo_destino || "-";
+            const variedadeVal = r.variedade || "-";
             
             const linha = [
                 r.id,
@@ -820,6 +897,7 @@
                 r.minha_maquina,
                 maqColetada.replace(/;/g, ','),
                 r.fazenda.replace(/;/g, ','),
+                variedadeVal.replace(/;/g, ','),
                 r.talhao.replace(/;/g, ','),
                 r.volume_carga,
                 valorHec,
@@ -831,8 +909,10 @@
 
         const operadorInput = document.getElementById('nome_operador').value.trim();
         const operadorLimpo = operadorInput ? operadorInput.replace(/\s+/g, '_') : 'OPERADOR';
-        const dataFiltroLimpa = dataFiltro.split('-').reverse().join('_');
-        const nomeArquivoFinal = `${operadorLimpo}_${dataFiltroLimpa}.csv`;
+        
+        const inputInicio = document.getElementById('filtro_data_inicio').value;
+        const dataFormatadaStr = inputInicio ? inputInicio.substring(0, 10).split('-').reverse().join('_') : obterDataFormatada();
+        const nomeArquivoFinal = `${operadorLimpo}_TURNO_${dataFormatadaStr}.csv`;
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -844,52 +924,49 @@
         document.body.removeChild(link);
     }
 
-    // Geração do PDF Vetorial com o jspdf e jspdf-autotable
+    // Geração de PDF Vetorial - Filtrado estritamente por Intervalo de Turnos
     function exportarPDF() {
-        const dataFiltro = document.getElementById('filtro_data_pdf').value;
-        if (!dataFiltro) {
-            alert('Por favor, escolha uma data para exportar o PDF.');
-            return;
-        }
-
-        const registros = obterRegistros();
-        const filtrados = registros.filter(r => r.data.startsWith(dataFiltro));
+        const filtrados = obterRegistrosFiltradosPorTurno();
 
         if (filtrados.length === 0) {
-            alert('Nenhum registro encontrado para a data escolhida.');
+            alert('Nenhum registro localizado para o turno ativo selecionado.');
             return;
         }
 
         filtrados.sort((a, b) => new Date(a.data.replace(' ', 'T')) - new Date(b.data.replace(' ', 'T')));
 
-        const dataFormatadaPt = dataFiltro.split('-').reverse().join('/');
+        const inputInicio = document.getElementById('filtro_data_inicio').value;
+        const inputFim = document.getElementById('filtro_data_fim').value;
 
-        // Nome de exportação
+        const inicioFormatado = formatarDataHoraParaExibicao(inputInicio.replace('T', ' '));
+        const fimFormatado = formatarDataHoraParaExibicao(inputFim.replace('T', ' '));
+
         const operadorInput = document.getElementById('nome_operador').value.trim();
         const operadorRegistro = filtrados[0] ? filtrados[0].nome_operador : 'OPERADOR';
         const operadorFinal = operadorInput || operadorRegistro; 
         const operadorLimpo = operadorFinal.replace(/\s+/g, '_');
-        const dataFiltroLimpa = dataFiltro.split('-').reverse().join('_');
-        const nomeArquivoFinal = `${operadorLimpo}_${dataFiltroLimpa}.pdf`;
+        const dataFormatadaStr = inputInicio ? inputInicio.substring(0, 10).split('-').reverse().join('_') : obterDataFormatada();
+        const nomeArquivoFinal = `${operadorLimpo}_TURNO_${dataFormatadaStr}.pdf`;
 
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'landscape' });
 
         doc.setFont("Helvetica", "bold");
-        doc.setFontSize(16);
-        doc.text("Relatório Diário de Operação de Campo", 14, 15);
+        doc.setFontSize(14);
+        doc.text("Relatório Periódico de Operação de Campo", 14, 15);
         
         doc.setFont("Helvetica", "normal");
-        doc.setFontSize(10);
-        doc.text(`Data de Referência: ${dataFormatadaPt} | Gerado em: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, 14, 22);
+        doc.setFontSize(9);
+        doc.text(`Turno de Referência: de ${inicioFormatado} até ${fimFormatado} | Gerado em: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, 14, 21);
 
-        const colunas = ["Data/Hora", "Operador", "Cód. Maq.", "Tipo Máquina", "Máq. Coletada", "Fazenda", "Talhão", "Vol. Carga", "Hectares", "Veículo Dest."];
+        const colunas = ["Data/Hora", "Operador", "Cód. Maq.", "Tipo Máquina", "Máq. Coletada", "Fazenda", "Variedade", "Talhão", "Vol. Carga", "Hectares", "Veículo Dest."];
         const linhas = [];
 
         filtrados.forEach(r => {
             const maqColetada = r.maquina_coletada || "-";
             const hecExibir = r.hectares !== null ? r.hectares.toString().replace('.', ',') : "-";
             const veiculoDest = r.cod_veiculo_destino || "-";
+            const variedadeVal = r.variedade || "-";
             const dataRelatorioExibivel = formatarDataHoraParaExibicao(r.data);
             
             linhas.push([
@@ -899,6 +976,7 @@
                 r.minha_maquina,
                 maqColetada,
                 r.fazenda,
+                variedadeVal,
                 r.talhao,
                 r.volume_carga,
                 hecExibir,
@@ -907,15 +985,15 @@
         });
 
         doc.autoTable({
-            startY: 28,
+            startY: 26,
             head: [colunas],
             body: linhas,
             theme: 'grid',
-            styles: { fontSize: 8, font: 'Helvetica' },
+            styles: { fontSize: 7, font: 'Helvetica', cellPadding: 2 },
             headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' }
         });
 
-        const finalY = doc.lastAutoTable.finalY + 15;
+        const finalY = doc.lastAutoTable.finalY + 12;
         const larguraPagina = doc.internal.pageSize.getWidth();
         const yLinha = finalY + 15;
 
@@ -956,8 +1034,8 @@
                 radioMaquina.dispatchEvent(new Event('change'));
             }
 
-            // Garante que Fazenda e Talhão permaneçam preenchidos
             document.getElementById('fazenda').value = ultimo.fazenda;
+            document.getElementById('variedade').value = ultimo.variedade || '';
             document.getElementById('talhao').value = ultimo.talhao;
 
             document.getElementById('data').value = obterDataLocalHoje();
@@ -972,6 +1050,7 @@
             document.getElementById('nome_operador').value = '';
             document.getElementById('cod_maquina').value = '';
             document.getElementById('fazenda').value = '';
+            document.getElementById('variedade').value = '';
             document.getElementById('talhao').value = '';
             document.getElementById('hectares').value = '';
             document.getElementById('cod_veiculo_destino').value = '';
@@ -1006,11 +1085,12 @@
             const exibirHectares = r.minha_maquina === 'Colheitadeira' ? ` | <strong>Hectares:</strong> ${r.hectares}` : '';
             const dataFormatada = formatarDataHoraParaExibicao(r.data);
             const veiculoExibir = r.cod_veiculo_destino || "-";
+            const variedadeExibir = r.variedade || "-";
 
             card.innerHTML = `
                 <div class="record-details">
                     <strong>Data/Hora:</strong> ${dataFormatada}<br>
-                    <strong>Operador:</strong> ${r.nome_operador} | <strong>Fazenda:</strong> ${r.fazenda} | <strong>Talhão:</strong> ${r.talhao}<br>
+                    <strong>Operador:</strong> ${r.nome_operador} | <strong>Fazenda:</strong> ${r.fazenda} | <strong>Variedade:</strong> ${variedadeExibir} | <strong>Talhão:</strong> ${r.talhao}<br>
                     <strong>Máquina:</strong> ${r.minha_maquina}${infoMaquinaColetada}${exibirHectares}<br>
                     <strong>Volume Carga:</strong> ${r.volume_carga} | <strong>Veículo:</strong> ${veiculoExibir}<br>
                 </div>
