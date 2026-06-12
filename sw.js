@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coleta-campo-v12'; // Versão v12 força a limpeza das rotinas de gravação de objeto antigas
+const CACHE_NAME = 'coleta-campo-v14'; // Versão v14 para renovar os scripts de filtros editáveis
 const ASSETS = [
   './',
   './index.html',
