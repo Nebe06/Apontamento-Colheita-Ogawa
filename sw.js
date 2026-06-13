@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coleta-campo-v15'; // Versão v15 limpa o cache e estabiliza o botão de editar
+const CACHE_NAME = 'coleta-campo-v16'; // Versão v16 corrige e estabiliza a rotina de edição dos botões de rádio
 const ASSETS = [
   './',
   './index.html',
