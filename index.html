@@ -488,7 +488,7 @@
         return { inicio: dataInicio, fim: dataFim };
     }
 
-    // RESOLVIDO: Removido o erro de atribuição d = data que travava o JS
+    // RESOLVIDO: Corrigido o erro de atribuição d = data que travava o JS em navegadores antigos
     function formatarParaInputDateTime(data, horaMinuto) {
         const ano = data.getFullYear();
         const mes = String(data.getMonth() + 1).padStart(2, '0');
@@ -537,6 +537,7 @@
         return parteHora ? `${dataFormatada} ${parteHora}` : dataFormatada;
     }
 
+    // RESOLVIDO: Varredura de rádio e alteração de visibilidade por laço clássico 'for' para compatibilidade total
     function configurarEventosCondicionais() {
         const radiosMinhaMaquina = document.getElementsByName('minha_maquina');
         const grupoMaquinaColetada = document.getElementById('grupo_maquina_coletada');
@@ -546,9 +547,9 @@
         const inputVeiculo = document.getElementById('cod_veiculo_destino');
         const labelVeiculo = document.getElementById('label_veiculo_destino');
 
-        radiosMinhaMaquina.forEach(radio => {
-            radio.addEventListener('change', () => {
-                if (radio.value === 'Bazuca') {
+        for (let i = 0; i < radiosMinhaMaquina.length; i++) {
+            radiosMinhaMaquina[i].addEventListener('change', function() {
+                if (this.value === 'Bazuca') {
                     grupoMaquinaColetada.classList.remove('hidden');
                     inputMaquinaColetada.required = true;
                     
@@ -570,7 +571,7 @@
                     labelVeiculo.innerText = "Veículo de Destino";
                 }
             });
-        });
+        }
     }
 
     function mostrarErro(idCampo, message) {
@@ -581,12 +582,13 @@
         }
     }
 
+    // RESOLVIDO: Varredura clássica para limpeza de mensagens em vermelho sem forEach
     function limparErros() {
-        const erros = document.querySelectorAll('.error-msg');
-        erros.forEach(el => {
-            el.style.display = 'none';
-            el.innerText = '';
-        });
+        const erros = document.getElementsByClassName('error-msg');
+        for (let i = 0; i < erros.length; i++) {
+            erros[i].style.display = 'none';
+            erros[i].innerText = '';
+        }
     }
 
     function validarFormulario(dados) {
@@ -797,10 +799,11 @@
         renderizarHistorico();
     });
 
-    // RESOLVIDO: Otimizada a rotina de busca de botões de rádio para prevenir quebras do navegador celular
+    // RESOLVIDO: Otimizada com laços clássicos 'for' e verificação estrita de texto nas ID do banco local (String)
     window.carregarParaEdicao = function(id) {
         const registros = obterRegistros();
-        const registro = registros.find(r => r.id === id);
+        // RESOLVIDO: Coerção explícita de tipos String(id) para evitar inconsistências numéricas entre plataformas móveis
+        const registro = registros.find(r => String(r.id) === String(id));
 
         if (!registro) return;
 
@@ -823,14 +826,14 @@
         document.getElementById('talhao').value = registro.talhao;
         document.getElementById('cod_veiculo_destino').value = registro.cod_veiculo_destino;
 
-        // Ativa o rádio de Minha Máquina varrendo o array para evitar erros de sintaxe CSS do celular
+        // RESOLVIDO: Varredura clássica por 'for' no rádio para evitar falhas do querySelector do celular
         const radiosMinhaMaquina = document.getElementsByName('minha_maquina');
-        radiosMinhaMaquina.forEach(r => {
-            if (r.value === registro.minha_maquina) {
-                r.checked = true;
-                r.dispatchEvent(new Event('change'));
+        for (let i = 0; i < radiosMinhaMaquina.length; i++) {
+            if (radiosMinhaMaquina[i].value === registro.minha_maquina) {
+                radiosMinhaMaquina[i].checked = true;
+                radiosMinhaMaquina[i].dispatchEvent(new Event('change'));
             }
-        });
+        }
 
         if (registro.minha_maquina === 'Bazuca') {
             document.getElementById('maquina_coletada').value = registro.maquina_coletada;
@@ -838,13 +841,13 @@
             document.getElementById('hectares').value = registro.hectares;
         }
 
-        // Ativa o rádio de Volume de Carga de forma segura por varredura simples
+        // RESOLVIDO: Varredura clássica para selecionar o Volume de Carga
         const radiosVolume = document.getElementsByName('volume_carga');
-        radiosVolume.forEach(r => {
-            if (r.value === registro.volume_carga) {
-                r.checked = true;
+        for (let i = 0; i < radiosVolume.length; i++) {
+            if (radiosVolume[i].value === registro.volume_carga) {
+                radiosVolume[i].checked = true;
             }
-        });
+        }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -1038,12 +1041,12 @@
             
             // Ativa o rádio de Minha Máquina varrendo o array para evitar erros de sintaxe CSS do celular
             const radiosMinhaMaquina = document.getElementsByName('minha_maquina');
-            radiosMinhaMaquina.forEach(r => {
-                if (r.value === ultimo.minha_maquina) {
-                    r.checked = true;
-                    r.dispatchEvent(new Event('change'));
+            for (let i = 0; i < radiosMinhaMaquina.length; i++) {
+                if (radiosMinhaMaquina[i].value === ultimo.minha_maquina) {
+                    radiosMinhaMaquina[i].checked = true;
+                    radiosMinhaMaquina[i].dispatchEvent(new Event('change'));
                 }
-            });
+            }
 
             // Preserva Variedade, Fazenda e Talhão conforme último registro
             document.getElementById('fazenda').value = ultimo.fazenda;
