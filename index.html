@@ -240,7 +240,7 @@
 <body>
 
 <div class="container" id="conteudoApp">
-    <h2>Coleta de Campo</h2>
+    <h2 id="tituloFormulario">Coleta de Campo</h2>
     
     <form id="registroForm" novalidate>
         <!-- Campos Fixos que NÃO são limpos ao salvar -->
@@ -465,7 +465,7 @@
         const ontem = new Date(agora);
         ontem.setDate(ontem.getDate() - 1);
         const amanha = new Date(agora);
-        amanha.setDate(amanha.setDate() + 1);
+        amanha.setDate(amanha.getDate() + 1);
 
         let dataInicio, dataFim;
         const hora = agora.getHours();
