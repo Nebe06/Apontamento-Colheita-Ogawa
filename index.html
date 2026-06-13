@@ -352,7 +352,6 @@
         </div>
 
         <div class="form-group">
-            <!-- RESOLVIDO: Corrigida a etiqueta HTML que causava travamento no JS do celular -->
             <label for="cod_veiculo_destino" id="label_veiculo_destino">Veículo de Destino</label>
             <div class="error-msg" id="erro_cod_veiculo_destino"></div>
             <input type="text" id="cod_veiculo_destino" required placeholder="Ex: 10" inputmode="numeric" pattern="[0-9]+">
@@ -489,7 +488,7 @@
         return { inicio: dataInicio, fim: dataFim };
     }
 
-    // RESOLVIDO: Removido o erro de atribuição de variável na hora de gerar a data
+    // RESOLVIDO: Removido o erro de atribuição d = data que travava o JS
     function formatarParaInputDateTime(data, horaMinuto) {
         const ano = data.getFullYear();
         const mes = String(data.getMonth() + 1).padStart(2, '0');
@@ -798,6 +797,7 @@
         renderizarHistorico();
     });
 
+    // RESOLVIDO: Otimizada a rotina de busca de botões de rádio para prevenir quebras do navegador celular
     window.carregarParaEdicao = function(id) {
         const registros = obterRegistros();
         const registro = registros.find(r => r.id === id);
@@ -823,11 +823,14 @@
         document.getElementById('talhao').value = registro.talhao;
         document.getElementById('cod_veiculo_destino').value = registro.cod_veiculo_destino;
 
-        const radioMaquina = document.querySelector(`input[name="minha_maquina"][value="${registro.minha_maquina}"]`);
-        if (radioMaquina) {
-            radioMaquina.checked = true;
-            radioMaquina.dispatchEvent(new Event('change'));
-        }
+        // Ativa o rádio de Minha Máquina varrendo o array para evitar erros de sintaxe CSS do celular
+        const radiosMinhaMaquina = document.getElementsByName('minha_maquina');
+        radiosMinhaMaquina.forEach(r => {
+            if (r.value === registro.minha_maquina) {
+                r.checked = true;
+                r.dispatchEvent(new Event('change'));
+            }
+        });
 
         if (registro.minha_maquina === 'Bazuca') {
             document.getElementById('maquina_coletada').value = registro.maquina_coletada;
@@ -835,10 +838,13 @@
             document.getElementById('hectares').value = registro.hectares;
         }
 
-        const radioVolume = document.querySelector(`input[name="volume_carga"][value="${registro.volume_carga}"]`);
-        if (radioVolume) {
-            radioVolume.checked = true;
-        }
+        // Ativa o rádio de Volume de Carga de forma segura por varredura simples
+        const radiosVolume = document.getElementsByName('volume_carga');
+        radiosVolume.forEach(r => {
+            if (r.value === registro.volume_carga) {
+                r.checked = true;
+            }
+        });
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -914,7 +920,7 @@
         
         const inputInicio = document.getElementById('filtro_data_inicio').value;
         const dataFormatadaStr = inputInicio ? inputInicio.substring(0, 10).split('-').reverse().join('_') : obterDataFormatada();
-        const nomeArquivoFinal = `${operadorLimpo}_TURNO_${dataFormatadaStr}.csv`; // RESOLVIDO: Sem erros de digitação internos
+        const nomeArquivoFinal = `${operadorLimpo}_TURNO_${dataFormatadaStr}.csv`;
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -948,7 +954,7 @@
         const operadorFinal = operadorInput || operadorRegistro; 
         const operadorLimpo = operadorFinal.replace(/\s+/g, '_');
         const dataFormatadaStr = inputInicio ? inputInicio.substring(0, 10).split('-').reverse().join('_') : obterDataFormatada();
-        const nomeArquivoFinal = `${operadorLimpo}_TURNO_${dataFormatadaStr}.pdf`; // RESOLVIDO: Sem erros de digitação internos
+        const nomeArquivoFinal = `${operadorLimpo}_TURNO_${dataFormatadaStr}.pdf`;
 
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'landscape' });
@@ -1027,15 +1033,17 @@
         if (registros.length > 0) {
             const ultimo = registros[registros.length - 1];
             
-            // Preserva Nome, Código e Tipo da Máquina conforme a última gravação
             document.getElementById('nome_operador').value = ultimo.nome_operador;
             document.getElementById('cod_maquina').value = ultimo.cod_maquina;
             
-            const radioMaquina = document.querySelector(`input[name="minha_maquina"][value="${ultimo.minha_maquina}"]`);
-            if (radioMaquina) {
-                radioMaquina.checked = true;
-                radioMaquina.dispatchEvent(new Event('change'));
-            }
+            // Ativa o rádio de Minha Máquina varrendo o array para evitar erros de sintaxe CSS do celular
+            const radiosMinhaMaquina = document.getElementsByName('minha_maquina');
+            radiosMinhaMaquina.forEach(r => {
+                if (r.value === ultimo.minha_maquina) {
+                    r.checked = true;
+                    r.dispatchEvent(new Event('change'));
+                }
+            });
 
             // Preserva Variedade, Fazenda e Talhão conforme último registro
             document.getElementById('fazenda').value = ultimo.fazenda;
