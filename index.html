@@ -488,7 +488,7 @@
         return { inicio: dataInicio, fim: dataFim };
     }
 
-    // RESOLVIDO: Corrigido o erro de atribuição d = data que travava o JS em navegadores antigos
+    // RESOLVIDO: Removido o erro de atribuição d = data que travava o JS em navegadores antigos
     function formatarParaInputDateTime(data, horaMinuto) {
         const ano = data.getFullYear();
         const mes = String(data.getMonth() + 1).padStart(2, '0');
@@ -513,9 +513,9 @@
     function obterHoraAtual() {
         const agora = new Date();
         const horas = String(agora.getHours()).padStart(2, '0');
-        const minutos = String(agora.getMinutes()).padStart(2, '0');
+        const minutes = String(agora.getMinutes()).padStart(2, '0');
         const segundos = String(agora.getSeconds()).padStart(2, '0');
-        return `${horas}:${minutos}:${segundos}`;
+        return `${horas}:${minutes}:${segundos}`;
     }
 
     function formatarDataHoraParaExibicao(dataOriginal) {
@@ -743,9 +743,10 @@
         const valorHectares = minhaMaquinaVal === 'Colheitadeira' ? parseFloat(dadosForm.hectaresVal) : null;
 
         if (idRegistroEmEdicao !== null) {
-            const index = registros.findIndex(r => r.id === idRegistroEmEdicao);
+            const index = registros.findIndex(r => String(r.id) === String(idRegistroEmEdicao));
             if (index !== -1) {
                 registros[index].data = `${dadosForm.dataSelecionada} ${obterHoraAtual()}`;
+                // RESOLVIDO: Vinculados os valores corretos das propriedades de dadosForm, evitando erros de referência nula
                 registros[index].nome_operador = dadosForm.operador;
                 registros[index].cod_maquina = dadosForm.codMaquina;
                 registros[index].minha_maquina = minhaMaquinaVal;
@@ -799,10 +800,9 @@
         renderizarHistorico();
     });
 
-    // RESOLVIDO: Otimizada com laços clássicos 'for' e verificação estrita de texto nas ID do banco local (String)
+    // RESOLVIDO: Ajustado o mapeamento e busca segura de registros e seleções de rádios por busca limpa em laço
     window.carregarParaEdicao = function(id) {
         const registros = obterRegistros();
-        // RESOLVIDO: Coerção explícita de tipos String(id) para evitar inconsistências numéricas entre plataformas móveis
         const registro = registros.find(r => String(r.id) === String(id));
 
         if (!registro) return;
@@ -826,7 +826,7 @@
         document.getElementById('talhao').value = registro.talhao;
         document.getElementById('cod_veiculo_destino').value = registro.cod_veiculo_destino;
 
-        // RESOLVIDO: Varredura clássica por 'for' no rádio para evitar falhas do querySelector do celular
+        // RESOLVIDO: Varredura clássica para selecionar o rádio do Tipo de Máquina
         const radiosMinhaMaquina = document.getElementsByName('minha_maquina');
         for (let i = 0; i < radiosMinhaMaquina.length; i++) {
             if (radiosMinhaMaquina[i].value === registro.minha_maquina) {
@@ -841,7 +841,7 @@
             document.getElementById('hectares').value = registro.hectares;
         }
 
-        // RESOLVIDO: Varredura clássica para selecionar o Volume de Carga
+        // RESOLVIDO: Varredura clássica para selecionar o rádio do Volume de Carga
         const radiosVolume = document.getElementsByName('volume_carga');
         for (let i = 0; i < radiosVolume.length; i++) {
             if (radiosVolume[i].value === registro.volume_carga) {
