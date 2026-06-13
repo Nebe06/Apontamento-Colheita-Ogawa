@@ -36,6 +36,7 @@
 
         .container {
             max-width: 500px;
+            margin: 0 flex;
             margin: 0 auto;
             background: #ffffff;
             padding: 20px;
@@ -488,7 +489,7 @@
         return { inicio: dataInicio, fim: dataFim };
     }
 
-    // RESOLVIDO: Removido o erro de atribuição d = data que travava o JS em navegadores antigos
+    // RESOLVIDO: Removida atribuição solta 'd = data' que quebrava celulares antigos
     function formatarParaInputDateTime(data, horaMinuto) {
         const ano = data.getFullYear();
         const mes = String(data.getMonth() + 1).padStart(2, '0');
@@ -513,9 +514,9 @@
     function obterHoraAtual() {
         const agora = new Date();
         const horas = String(agora.getHours()).padStart(2, '0');
-        const minutes = String(agora.getMinutes()).padStart(2, '0');
+        const minutos = String(agora.getMinutes()).padStart(2, '0');
         const segundos = String(agora.getSeconds()).padStart(2, '0');
-        return `${horas}:${minutes}:${segundos}`;
+        return `${horas}:${minutos}:${segundos}`;
     }
 
     function formatarDataHoraParaExibicao(dataOriginal) {
@@ -537,9 +538,8 @@
         return parteHora ? `${dataFormatada} ${parteHora}` : dataFormatada;
     }
 
-    // RESOLVIDO: Varredura de rádio e alteração de visibilidade por laço clássico 'for' para compatibilidade total
-    function configurarEventosCondicionais() {
-        const radiosMinhaMaquina = document.getElementsByName('minha_maquina');
+    // RESOLVIDO: Estrutura isolada de alteração de campos condicionais
+    function ajustarCamposCondicionais(tipoMaquina) {
         const grupoMaquinaColetada = document.getElementById('grupo_maquina_coletada');
         const inputMaquinaColetada = document.getElementById('maquina_coletada');
         const grupoHectares = document.getElementById('grupo_hectares');
@@ -547,29 +547,35 @@
         const inputVeiculo = document.getElementById('cod_veiculo_destino');
         const labelVeiculo = document.getElementById('label_veiculo_destino');
 
+        if (tipoMaquina === 'Bazuca') {
+            grupoMaquinaColetada.classList.remove('hidden');
+            inputMaquinaColetada.required = true;
+            
+            grupoHectares.classList.add('hidden');
+            inputHectares.required = false;
+            inputHectares.value = '';
+
+            inputVeiculo.required = false;
+            labelVeiculo.innerText = "Veículo de Destino (Opcional)";
+        } else {
+            grupoMaquinaColetada.classList.add('hidden');
+            inputMaquinaColetada.required = false;
+            inputMaquinaColetada.value = '';
+            
+            grupoHectares.classList.remove('hidden');
+            inputHectares.required = true;
+
+            inputVeiculo.required = true;
+            labelVeiculo.innerText = "Veículo de Destino";
+        }
+    }
+
+    // RESOLVIDO: Ouvintes de alteração de rádio configurados por laço clássico e chamada da função isolada
+    function configurarEventosCondicionais() {
+        const radiosMinhaMaquina = document.getElementsByName('minha_maquina');
         for (let i = 0; i < radiosMinhaMaquina.length; i++) {
             radiosMinhaMaquina[i].addEventListener('change', function() {
-                if (this.value === 'Bazuca') {
-                    grupoMaquinaColetada.classList.remove('hidden');
-                    inputMaquinaColetada.required = true;
-                    
-                    grupoHectares.classList.add('hidden');
-                    inputHectares.required = false;
-                    inputHectares.value = '';
-
-                    inputVeiculo.required = false;
-                    labelVeiculo.innerText = "Veículo de Destino (Opcional)";
-                } else {
-                    grupoMaquinaColetada.classList.add('hidden');
-                    inputMaquinaColetada.required = false;
-                    inputMaquinaColetada.value = '';
-                    
-                    grupoHectares.classList.remove('hidden');
-                    inputHectares.required = true;
-
-                    inputVeiculo.required = true;
-                    labelVeiculo.innerText = "Veículo de Destino";
-                }
+                ajustarCamposCondicionais(this.value);
             });
         }
     }
@@ -582,7 +588,7 @@
         }
     }
 
-    // RESOLVIDO: Varredura clássica para limpeza de mensagens em vermelho sem forEach
+    // RESOLVIDO: Limpeza de erros em loop clássico
     function limparErros() {
         const erros = document.getElementsByClassName('error-msg');
         for (let i = 0; i < erros.length; i++) {
@@ -746,7 +752,6 @@
             const index = registros.findIndex(r => String(r.id) === String(idRegistroEmEdicao));
             if (index !== -1) {
                 registros[index].data = `${dadosForm.dataSelecionada} ${obterHoraAtual()}`;
-                // RESOLVIDO: Vinculados os valores corretos das propriedades de dadosForm, evitando erros de referência nula
                 registros[index].nome_operador = dadosForm.operador;
                 registros[index].cod_maquina = dadosForm.codMaquina;
                 registros[index].minha_maquina = minhaMaquinaVal;
@@ -794,13 +799,13 @@
 
             document.getElementById('maquina_coletada').value = '';
 
-            alert('Registro salvo localmente.');
+            alert('Registro saved localmente.');
         }
 
         renderizarHistorico();
     });
 
-    // RESOLVIDO: Ajustado o mapeamento e busca segura de registros e seleções de rádios por busca limpa em laço
+    // RESOLVIDO: Todo o processo de carga para edição foi otimizado para evitar travamentos de sintaxe e carregamento de rádio
     window.carregarParaEdicao = function(id) {
         const registros = obterRegistros();
         const registro = registros.find(r => String(r.id) === String(id));
@@ -816,7 +821,8 @@
         document.getElementById('btnCancelarEdicao').style.display = 'block';
 
         const inputData = document.getElementById('data');
-        inputData.value = registro.data.substring(0, 10);
+        const dataOriginal = registro.data || '';
+        inputData.value = dataOriginal.substring(0, 10);
         inputData.disabled = true;
 
         document.getElementById('nome_operador').value = registro.nome_operador;
@@ -824,16 +830,18 @@
         document.getElementById('fazenda').value = registro.fazenda;
         document.getElementById('variedade').value = registro.variedade || '';
         document.getElementById('talhao').value = registro.talhao;
-        document.getElementById('cod_veiculo_destino').value = registro.cod_veiculo_destino;
+        document.getElementById('cod_veiculo_destino').value = registro.cod_veiculo_destino || '';
 
-        // RESOLVIDO: Varredura clássica para selecionar o rádio do Tipo de Máquina
+        // RESOLVIDO: Define o rádio de Minha Máquina varrendo as opções
         const radiosMinhaMaquina = document.getElementsByName('minha_maquina');
         for (let i = 0; i < radiosMinhaMaquina.length; i++) {
             if (radiosMinhaMaquina[i].value === registro.minha_maquina) {
                 radiosMinhaMaquina[i].checked = true;
-                radiosMinhaMaquina[i].dispatchEvent(new Event('change'));
             }
         }
+
+        // RESOLVIDO: Aplica a visibilidade dos campos condicionais chamando a função de forma direta (Seguro e robusto)
+        ajustarCamposCondicionais(registro.minha_maquina);
 
         if (registro.minha_maquina === 'Bazuca') {
             document.getElementById('maquina_coletada').value = registro.maquina_coletada;
@@ -841,7 +849,7 @@
             document.getElementById('hectares').value = registro.hectares;
         }
 
-        // RESOLVIDO: Varredura clássica para selecionar o rádio do Volume de Carga
+        // RESOLVIDO: Define o rádio de Volume de Carga varrendo de forma limpa as opções
         const radiosVolume = document.getElementsByName('volume_carga');
         for (let i = 0; i < radiosVolume.length; i++) {
             if (radiosVolume[i].value === registro.volume_carga) {
@@ -1039,16 +1047,17 @@
             document.getElementById('nome_operador').value = ultimo.nome_operador;
             document.getElementById('cod_maquina').value = ultimo.cod_maquina;
             
-            // Ativa o rádio de Minha Máquina varrendo o array para evitar erros de sintaxe CSS do celular
+            // Ativa o rádio de Minha Máquina varrendo o array para evitar erros de compatibilidade
             const radiosMinhaMaquina = document.getElementsByName('minha_maquina');
             for (let i = 0; i < radiosMinhaMaquina.length; i++) {
                 if (radiosMinhaMaquina[i].value === ultimo.minha_maquina) {
                     radiosMinhaMaquina[i].checked = true;
-                    radiosMinhaMaquina[i].dispatchEvent(new Event('change'));
                 }
             }
 
-            // Preserva Variedade, Fazenda e Talhão conforme último registro
+            // Garante o carregamento da exibição condicional correta
+            ajustarCamposCondicionais(ultimo.minha_maquina);
+
             document.getElementById('fazenda').value = ultimo.fazenda;
             document.getElementById('variedade').value = ultimo.variedade || '';
             document.getElementById('talhao').value = ultimo.talhao;
