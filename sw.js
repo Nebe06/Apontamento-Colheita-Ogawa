@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coleta-campo-v17'; // Versão v17 atualiza as funções do histórico e edição
+const CACHE_NAME = 'coleta-campo-v18'; // v18 invalida os caches antigos e recarrega os scripts de edição corrigidos
 const ASSETS = [
   './',
   './index.html',
