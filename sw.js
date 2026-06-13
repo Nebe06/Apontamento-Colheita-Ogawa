@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coleta-campo-v14'; // Versão v14 para renovar os scripts de filtros editáveis
+const CACHE_NAME = 'coleta-campo-v15'; // Versão v15 limpa o cache e estabiliza o botão de editar
 const ASSETS = [
   './',
   './index.html',
