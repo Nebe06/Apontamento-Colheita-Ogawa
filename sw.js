@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coleta-campo-v18'; // v18 invalida os caches antigos e recarrega os scripts de edição corrigidos
+const CACHE_NAME = 'coleta-campo-v18'; // Versão v18 limpa de vez as rotinas antigas de Event('change')
 const ASSETS = [
   './',
   './index.html',
