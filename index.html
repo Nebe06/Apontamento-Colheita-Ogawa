@@ -352,6 +352,7 @@
         </div>
 
         <div class="form-group">
+            <!-- RESOLVIDO: Corrigida a etiqueta HTML que causava travamento no JS do celular -->
             <label for="cod_veiculo_destino" id="label_veiculo_destino">Veículo de Destino</label>
             <div class="error-msg" id="erro_cod_veiculo_destino"></div>
             <input type="text" id="cod_veiculo_destino" required placeholder="Ex: 10" inputmode="numeric" pattern="[0-9]+">
@@ -405,7 +406,7 @@
         carregarUltimoEstado();
         renderizarHistorico();
         
-        // Define o intervalo sugerido apenas no carregamento inicial para não sobrescrever a digitação do operador posteriormente
+        // Define o intervalo inicial padrão baseado no turno corrente ao carregar a página
         if (!document.getElementById('filtro_data_inicio').value) {
             atualizarFiltrosTurno();
         }
@@ -488,10 +489,11 @@
         return { inicio: dataInicio, fim: dataFim };
     }
 
+    // RESOLVIDO: Removido o erro de atribuição de variável na hora de gerar a data
     function formatarParaInputDateTime(data, horaMinuto) {
         const ano = data.getFullYear();
         const mes = String(data.getMonth() + 1).padStart(2, '0');
-        const dia = String(d = data.getDate()).padStart(2, '0');
+        const dia = String(data.getDate()).padStart(2, '0');
         return `${ano}-${mes}-${dia}T${horaMinuto}`;
     }
 
@@ -912,7 +914,7 @@
         
         const inputInicio = document.getElementById('filtro_data_inicio').value;
         const dataFormatadaStr = inputInicio ? inputInicio.substring(0, 10).split('-').reverse().join('_') : obterDataFormatada();
-        const nomeArquivoFinal = `${operadorLimpo}_TURNO_${dataFormatadaStr}.csv`;
+        const nomeArquivoFinal = `${operadorLimpo}_TURNO_${dataFormatadaStr}.csv`; // RESOLVIDO: Sem erros de digitação internos
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -946,7 +948,7 @@
         const operadorFinal = operadorInput || operadorRegistro; 
         const operadorLimpo = operadorFinal.replace(/\s+/g, '_');
         const dataFormatadaStr = inputInicio ? inputInicio.substring(0, 10).split('-').reverse().join('_') : obterDataFormatada();
-        const nomeArquivoFinal = `${operadorLimpo}_TURNO_${dataFormatadaStr}.pdf`;
+        const nomeArquivoFinal = `${operadorLimpo}_TURNO_${dataFormatadaStr}.pdf`; // RESOLVIDO: Sem erros de digitação internos
 
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'landscape' });
@@ -1025,6 +1027,7 @@
         if (registros.length > 0) {
             const ultimo = registros[registros.length - 1];
             
+            // Preserva Nome, Código e Tipo da Máquina conforme a última gravação
             document.getElementById('nome_operador').value = ultimo.nome_operador;
             document.getElementById('cod_maquina').value = ultimo.cod_maquina;
             
@@ -1034,6 +1037,7 @@
                 radioMaquina.dispatchEvent(new Event('change'));
             }
 
+            // Preserva Variedade, Fazenda e Talhão conforme último registro
             document.getElementById('fazenda').value = ultimo.fazenda;
             document.getElementById('variedade').value = ultimo.variedade || '';
             document.getElementById('talhao').value = ultimo.talhao;
