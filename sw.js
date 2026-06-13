@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coleta-campo-v18'; // Versão v18 limpa de vez as rotinas antigas de Event('change')
+const CACHE_NAME = 'coleta-campo-v19'; // v19: corrige botão "Editar" (id tituloFormulario ausente) e bug de data no turno noturno
 const ASSETS = [
   './',
   './index.html',
