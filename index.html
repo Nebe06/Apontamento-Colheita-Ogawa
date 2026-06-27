@@ -279,7 +279,21 @@
         <div class="form-group">
             <label for="cod_maquina">Código da Minha Máquina</label>
             <div class="error-msg" id="erro_cod_maquina"></div>
-            <input type="text" id="cod_maquina" required placeholder="Ex: 4" inputmode="numeric" pattern="[0-9]+">
+            <div class="veiculo-row">
+                <input type="text" id="cod_maquina" required placeholder="Ex: 4" inputmode="numeric" pattern="[0-9]+">
+                <div class="veiculo-tipo">
+                    <div class="radio-group-tipo">
+                        <div class="radio-option">
+                            <input type="radio" id="maquina_proprio" name="maquina_tipo" value="Próprio">
+                            <label for="maquina_proprio">Próprio</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="maquina_terceirizado" name="maquina_tipo" value="Terceirizado">
+                            <label for="maquina_terceirizado">Terceirizado</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="form-group">
@@ -769,6 +783,7 @@
             operador: document.getElementById('nome_operador').value.trim(),
             codMaquina: document.getElementById('cod_maquina').value.trim(),
             minhaMaquinaRadio: document.querySelector('input[name="minha_maquina"]:checked'),
+            maquinaTipo: document.querySelector('input[name="maquina_tipo"]:checked'),
             maqColetada: document.getElementById('maquina_coletada').value.trim(),
             dataSelecionada: document.getElementById('data').value.trim(),
             fazendaOriginal: document.getElementById('fazenda').value, 
@@ -795,6 +810,7 @@
                 registros[index].data = `${dadosForm.dataSelecionada} ${obterHoraAtual()}`;
                 registros[index].nome_operador = dadosForm.operador;
                 registros[index].cod_maquina = dadosForm.codMaquina;
+                registros[index].maquina_tipo = dadosForm.maquinaTipo ? dadosForm.maquinaTipo.value : '';
                 registros[index].minha_maquina = minhaMaquinaVal;
                 registros[index].maquina_coletada = dadosForm.maqColetada;
                 registros[index].fazenda = dadosForm.fazendaValor;
@@ -818,6 +834,7 @@
                 data: dataComHora,
                 nome_operador: dadosForm.operador,
                 cod_maquina: dadosForm.codMaquina,
+                maquina_tipo: dadosForm.maquinaTipo ? dadosForm.maquinaTipo.value : '',
                 minha_maquina: minhaMaquinaVal,
                 maquina_coletada: dadosForm.maqColetada,
                 fazenda: dadosForm.fazendaValor,
@@ -872,6 +889,10 @@
 
         document.getElementById('nome_operador').value = registro.nome_operador;
         document.getElementById('cod_maquina').value = registro.cod_maquina;
+        const radiosMaquinaTipo = document.getElementsByName('maquina_tipo');
+        for (let i = 0; i < radiosMaquinaTipo.length; i++) {
+            radiosMaquinaTipo[i].checked = radiosMaquinaTipo[i].value === (registro.maquina_tipo || '');
+        }
         document.getElementById('fazenda').value = registro.fazenda;
         document.getElementById('variedade').value = registro.variedade || '';
         document.getElementById('talhao').value = registro.talhao;
@@ -949,7 +970,7 @@
         }
 
         let csvContent = '\uFEFF'; 
-        csvContent += 'ID;Data Operacao;Operador;Cod Maquina;Tipo Maquina;Maquina Coletada;Fazenda;Variedade;Talhao;Volume Carga;Hectares;Veiculo Destino;Terceirizado;Criado Em\r\n';
+        csvContent += 'ID;Data Operacao;Operador;Cod Maquina;Tipo Propriedade Maquina;Tipo Maquina;Maquina Coletada;Fazenda;Variedade;Talhao;Volume Carga;Hectares;Veiculo Destino;Tipo Veiculo;Criado Em\r\n';
 
         filtrados.forEach(r => {
             const maqColetada = r.maquina_coletada || "-";
@@ -957,12 +978,14 @@
             const veiculoDest = r.cod_veiculo_destino || "-";
             const variedadeVal = r.variedade || "-";
             const terceirizado = r.veiculo_terceirizado || "-";
+            const maquinaTipo = r.maquina_tipo || "-";
             
             const linha = [
                 r.id,
                 r.data,
                 r.nome_operador.replace(/;/g, ','),
                 r.cod_maquina.replace(/;/g, ','),
+                maquinaTipo,
                 r.minha_maquina,
                 maqColetada.replace(/;/g, ','),
                 r.fazenda.replace(/;/g, ','),
@@ -1029,7 +1052,7 @@
         doc.setFontSize(9);
         doc.text(`Turno de Referência: de ${inicioFormatado} até ${fimFormatado} | Gerado em: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, 14, 21);
 
-        const colunas = ["Data/Hora", "Operador", "Cód. Maq.", "Tipo Máquina", "Máq. Coletada", "Fazenda", "Variedade", "Talhão", "Vol. Carga", "Hectares", "Veículo Dest.", "Tipo Veíc."];
+        const colunas = ["Data/Hora", "Operador", "Cód. Maq.", "Prop. Maq.", "Tipo Máquina", "Máq. Coletada", "Fazenda", "Variedade", "Talhão", "Vol. Carga", "Hectares", "Veículo Dest.", "Tipo Veíc."];
         const linhas = [];
 
         filtrados.forEach(r => {
@@ -1038,12 +1061,14 @@
             const veiculoDest = r.cod_veiculo_destino || "-";
             const variedadeVal = r.variedade || "-";
             const tipoVeiculo = r.veiculo_terceirizado || "-";
+            const maquinaTipo = r.maquina_tipo || "-";
             const dataRelatorioExibivel = formatarDataHoraParaExibicao(r.data);
             
             linhas.push([
                 dataRelatorioExibivel,
                 r.nome_operador,
                 r.cod_maquina,
+                maquinaTipo,
                 r.minha_maquina,
                 maqColetada,
                 r.fazenda,
@@ -1099,6 +1124,12 @@
             
             document.getElementById('nome_operador').value = ultimo.nome_operador;
             document.getElementById('cod_maquina').value = ultimo.cod_maquina;
+
+            // Restaura o rádio de maquina_tipo do último registro (não é limpo ao salvar)
+            const radiosMaquinaTipoUlt = document.getElementsByName('maquina_tipo');
+            for (let i = 0; i < radiosMaquinaTipoUlt.length; i++) {
+                radiosMaquinaTipoUlt[i].checked = radiosMaquinaTipoUlt[i].value === (ultimo.maquina_tipo || '');
+            }
             
             // Ativa o rádio de Minha Máquina varrendo o array para evitar erros de compatibilidade
             const radiosMinhaMaquina = document.getElementsByName('minha_maquina');
@@ -1168,12 +1199,13 @@
             const veiculoExibir = r.cod_veiculo_destino || "-";
             const variedadeExibir = r.variedade || "-";
             const terceirizadoExibir = r.veiculo_terceirizado ? ` <strong style="color:var(--warning-color)">[${r.veiculo_terceirizado}]</strong>` : '';
+            const maquinaTipoExibir = r.maquina_tipo ? ` <strong style="color:var(--warning-color)">[${r.maquina_tipo}]</strong>` : '';
 
             card.innerHTML = `
                 <div class="record-details">
                     <strong>Data/Hora:</strong> ${dataFormatada}<br>
                     <strong>Operador:</strong> ${r.nome_operador} | <strong>Fazenda:</strong> ${r.fazenda} | <strong>Variedade:</strong> ${variedadeExibir} | <strong>Talhão:</strong> ${r.talhao}<br>
-                    <strong>Máquina:</strong> ${r.minha_maquina}${infoMaquinaColetada}${exibirHectares}<br>
+                    <strong>Máquina:</strong> ${r.cod_maquina} ${r.minha_maquina}${maquinaTipoExibir}${infoMaquinaColetada}${exibirHectares}<br>
                     <strong>Volume Carga:</strong> ${r.volume_carga} | <strong>Veículo:</strong> ${veiculoExibir}${terceirizadoExibir}<br>
                 </div>
                 <div class="card-actions">
