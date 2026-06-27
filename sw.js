@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coleta-campo-v22'; // v22: alinha botões Próprio/Terceirizado na mesma altura do input de veículo
+const CACHE_NAME = 'coleta-campo-v23'; // v23: botões Próprio/Terceirizado no campo Código da Minha Máquina
 const ASSETS = [
   './',
   './index.html',
