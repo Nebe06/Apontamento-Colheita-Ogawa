@@ -225,6 +225,32 @@
             background-color: var(--secondary-hover);
         }
 
+        .veiculo-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .veiculo-row input[type="text"] {
+            flex: 1;
+        }
+
+        .veiculo-tipo {
+            display: flex;
+            flex-shrink: 0;
+        }
+
+        .veiculo-tipo .radio-group-tipo {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .veiculo-tipo .radio-option label {
+            font-size: 12px;
+            padding: 8px 6px;
+        }
+
         .btn-delete {
             background-color: var(--danger-color) !important;
             color: white !important;
@@ -355,7 +381,21 @@
         <div class="form-group">
             <label for="cod_veiculo_destino" id="label_veiculo_destino">Veículo de Destino</label>
             <div class="error-msg" id="erro_cod_veiculo_destino"></div>
-            <input type="text" id="cod_veiculo_destino" required placeholder="Ex: 10" inputmode="numeric" pattern="[0-9]+">
+            <div class="veiculo-row">
+                <input type="text" id="cod_veiculo_destino" required placeholder="Ex: 10" inputmode="numeric" pattern="[0-9]+">
+                <div class="veiculo-tipo">
+                    <div class="radio-group-tipo">
+                        <div class="radio-option">
+                            <input type="radio" id="veiculo_proprio" name="veiculo_tipo" value="Próprio">
+                            <label for="veiculo_proprio">Próprio</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="veiculo_terceirizado" name="veiculo_tipo" value="Terceirizado">
+                            <label for="veiculo_terceirizado">Terceirizado</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <button type="submit" class="btn-submit" id="btnSalvar">Salvar Registro</button>
@@ -389,7 +429,7 @@
     const FAZENDAS_PERMITIDAS = [
         "BRASIL", "BELA VISTA", "JULICE", "JAD", "BARREIRO", "IRMAS", 
         "GRAO DE OURO", "CHUPE", "JOAO FONSECA", "FRANCES", "PERDIZ", 
-        "POUSO ALTO", "SAO JOAO", "SONHO VERDE (CONFINAMENTO)", "VITORIA", "SOSSEGO"
+        "POUSO ALTO (BACABA)", "SAO JOAO", "SONHO VERDE (CONFINAMENTO)", "VITORIA", "SOSSEGO"
     ];
 
     if ('serviceWorker' in navigator) {
@@ -737,7 +777,8 @@
             talhao: document.getElementById('talhao').value.trim(),
             volumeCargaRadio: document.querySelector('input[name="volume_carga"]:checked'),
             hectaresVal: document.getElementById('hectares').value.trim(),
-            veiculo: document.getElementById('cod_veiculo_destino').value.trim()
+            veiculo: document.getElementById('cod_veiculo_destino').value.trim(),
+            veiculoTerceirizado: document.querySelector('input[name="veiculo_tipo"]:checked')
         };
 
         if (!validarFormulario(dadosForm)) {
@@ -762,6 +803,7 @@
                 registros[index].volume_carga = dadosForm.volumeCargaRadio.value;
                 registros[index].hectares = valorHectares;
                 registros[index].cod_veiculo_destino = dadosForm.veiculo;
+                registros[index].veiculo_terceirizado = dadosForm.veiculoTerceirizado ? dadosForm.veiculoTerceirizado.value : '';
 
                 salvarRegistros(registros);
                 alert('Registro atualizado localmente.');
@@ -783,7 +825,8 @@
                 talhao: dadosForm.talhao,
                 volume_carga: dadosForm.volumeCargaRadio.value,
                 hectares: valorHectares,
-                cod_veiculo_destino: dadosForm.veiculo
+                cod_veiculo_destino: dadosForm.veiculo,
+                veiculo_terceirizado: dadosForm.veiculoTerceirizado ? dadosForm.veiculoTerceirizado.value : ''
             };
 
             registros.push(dataRegistro);
@@ -793,6 +836,8 @@
             document.getElementById('data').value = obterDataLocalHoje();
             document.getElementById('hectares').value = '';
             document.getElementById('cod_veiculo_destino').value = '';
+            const checkedVeiculoTipoSave = document.querySelector('input[name="veiculo_tipo"]:checked');
+            if (checkedVeiculoTipoSave) checkedVeiculoTipoSave.checked = false;
             
             const checkedVolume = document.querySelector('input[name="volume_carga"]:checked');
             if (checkedVolume) checkedVolume.checked = false;
@@ -831,6 +876,10 @@
         document.getElementById('variedade').value = registro.variedade || '';
         document.getElementById('talhao').value = registro.talhao;
         document.getElementById('cod_veiculo_destino').value = registro.cod_veiculo_destino || '';
+        const radiosVeiculoTipo = document.getElementsByName('veiculo_tipo');
+        for (let i = 0; i < radiosVeiculoTipo.length; i++) {
+            radiosVeiculoTipo[i].checked = radiosVeiculoTipo[i].value === (registro.veiculo_terceirizado || '');
+        }
 
         // RESOLVIDO: Define o rádio de Minha Máquina varrendo as opções
         const radiosMinhaMaquina = document.getElementsByName('minha_maquina');
@@ -900,13 +949,14 @@
         }
 
         let csvContent = '\uFEFF'; 
-        csvContent += 'ID;Data Operacao;Operador;Cod Maquina;Tipo Maquina;Maquina Coletada;Fazenda;Variedade;Talhao;Volume Carga;Hectares;Veiculo Destino;Criado Em\r\n';
+        csvContent += 'ID;Data Operacao;Operador;Cod Maquina;Tipo Maquina;Maquina Coletada;Fazenda;Variedade;Talhao;Volume Carga;Hectares;Veiculo Destino;Terceirizado;Criado Em\r\n';
 
         filtrados.forEach(r => {
             const maqColetada = r.maquina_coletada || "-";
             const valorHec = r.hectares !== null ? r.hectares.toString().replace('.', ',') : "-";
             const veiculoDest = r.cod_veiculo_destino || "-";
             const variedadeVal = r.variedade || "-";
+            const terceirizado = r.veiculo_terceirizado || "-";
             
             const linha = [
                 r.id,
@@ -921,6 +971,7 @@
                 r.volume_carga,
                 valorHec,
                 veiculoDest.replace(/;/g, ','),
+                terceirizado,
                 r.timestamp_criacao
             ];
             csvContent += linha.join(';') + '\r\n';
@@ -978,7 +1029,7 @@
         doc.setFontSize(9);
         doc.text(`Turno de Referência: de ${inicioFormatado} até ${fimFormatado} | Gerado em: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, 14, 21);
 
-        const colunas = ["Data/Hora", "Operador", "Cód. Maq.", "Tipo Máquina", "Máq. Coletada", "Fazenda", "Variedade", "Talhão", "Vol. Carga", "Hectares", "Veículo Dest."];
+        const colunas = ["Data/Hora", "Operador", "Cód. Maq.", "Tipo Máquina", "Máq. Coletada", "Fazenda", "Variedade", "Talhão", "Vol. Carga", "Hectares", "Veículo Dest.", "Tipo Veíc."];
         const linhas = [];
 
         filtrados.forEach(r => {
@@ -986,6 +1037,7 @@
             const hecExibir = r.hectares !== null ? r.hectares.toString().replace('.', ',') : "-";
             const veiculoDest = r.cod_veiculo_destino || "-";
             const variedadeVal = r.variedade || "-";
+            const tipoVeiculo = r.veiculo_terceirizado || "-";
             const dataRelatorioExibivel = formatarDataHoraParaExibicao(r.data);
             
             linhas.push([
@@ -999,7 +1051,8 @@
                 r.talhao,
                 r.volume_carga,
                 hecExibir,
-                veiculoDest
+                veiculoDest,
+                tipoVeiculo
             ]);
         });
 
@@ -1065,6 +1118,8 @@
             document.getElementById('data').value = obterDataLocalHoje();
             document.getElementById('hectares').value = '';
             document.getElementById('cod_veiculo_destino').value = '';
+            const checkedVeiculoTipo1 = document.querySelector('input[name="veiculo_tipo"]:checked');
+            if (checkedVeiculoTipo1) checkedVeiculoTipo1.checked = false;
             document.getElementById('maquina_coletada').value = '';
             
             const checkedVolume = document.querySelector('input[name="volume_carga"]:checked');
@@ -1078,6 +1133,8 @@
             document.getElementById('talhao').value = '';
             document.getElementById('hectares').value = '';
             document.getElementById('cod_veiculo_destino').value = '';
+            const checkedVeiculoTipo2 = document.querySelector('input[name="veiculo_tipo"]:checked');
+            if (checkedVeiculoTipo2) checkedVeiculoTipo2.checked = false;
             document.getElementById('maquina_coletada').value = '';
             
             const checkedMaquina = document.querySelector('input[name="minha_maquina"]:checked');
@@ -1110,13 +1167,14 @@
             const dataFormatada = formatarDataHoraParaExibicao(r.data);
             const veiculoExibir = r.cod_veiculo_destino || "-";
             const variedadeExibir = r.variedade || "-";
+            const terceirizadoExibir = r.veiculo_terceirizado ? ` <strong style="color:var(--warning-color)">[${r.veiculo_terceirizado}]</strong>` : '';
 
             card.innerHTML = `
                 <div class="record-details">
                     <strong>Data/Hora:</strong> ${dataFormatada}<br>
                     <strong>Operador:</strong> ${r.nome_operador} | <strong>Fazenda:</strong> ${r.fazenda} | <strong>Variedade:</strong> ${variedadeExibir} | <strong>Talhão:</strong> ${r.talhao}<br>
                     <strong>Máquina:</strong> ${r.minha_maquina}${infoMaquinaColetada}${exibirHectares}<br>
-                    <strong>Volume Carga:</strong> ${r.volume_carga} | <strong>Veículo:</strong> ${veiculoExibir}<br>
+                    <strong>Volume Carga:</strong> ${r.volume_carga} | <strong>Veículo:</strong> ${veiculoExibir}${terceirizadoExibir}<br>
                 </div>
                 <div class="card-actions">
                     <button class="btn-card-edit" onclick="carregarParaEdicao(${r.id})">Editar</button>
