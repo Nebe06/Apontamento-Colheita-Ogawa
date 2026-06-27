@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coleta-campo-v19'; // v19: corrige botão "Editar" (id tituloFormulario ausente) e bug de data no turno noturno
+const CACHE_NAME = 'coleta-campo-v22'; // v22: alinha botões Próprio/Terceirizado na mesma altura do input de veículo
 const ASSETS = [
   './',
   './index.html',
